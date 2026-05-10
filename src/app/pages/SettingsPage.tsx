@@ -93,10 +93,9 @@ export function SettingsPage() {
     }
   };
 
-  const initials = currentUser
+const initials = currentUser
     ? `${currentUser.firstName[0]}${currentUser.lastName[0]}`.toUpperCase()
     : "SF";
-
   const cardCls = "liquid-glass rounded-2xl overflow-hidden";
   const sectionHead =
     "px-5 py-3.5 border-b border-white/20 dark:border-border flex items-center justify-between";
