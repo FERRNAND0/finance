@@ -15,7 +15,7 @@ ROOT_URLCONF = 'core.urls'
 DEBUG = False
 
 # Укажи здесь свой домен и IP сервера Contabo
-ALLOWED_HOSTS = ['75.119.144.200', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['finance.lxv.uz', '75.119.144.200', 'localhost', '127.0.0.1']
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -36,17 +36,17 @@ INSTALLED_APPS = [
     # Твое приложение
     'core', 
 ]
-
+WSGI_APPLICATION = 'core.wsgi.application'
 # ОЧЕНЬ ВАЖНО: Укажи Django использовать твою кастомную модель пользователя
 AUTH_USER_MODEL = 'core.User'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware', # Должен быть выше AuthMiddleware
-    'corsheaders.middleware.CorsMiddleware', # Твой CORS
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    'whitenoise.middleware.WhiteNoiseMiddleware'
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
@@ -56,7 +56,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
     "http://75.119.144.200:5173", # <-- Обязательно добавь это
-    "http://75.119.144.200",      # <-- И это (если будешь запускать без порта 5173)
+    "http://75.119.144.200",
+"http://finance.lxv.uz",
+    "https://finance.lxv.uz",      # <-- И это (если будешь запускать без порта 5173)
 ]
 # Конфиг JWT
 REST_FRAMEWORK = {
@@ -119,3 +121,4 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
