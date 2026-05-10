@@ -57,7 +57,7 @@ export function AuthPage() {
         : { email, password, first_name: firstName, last_name: lastName };
 
     try {
-        const response = await fetch(`http://75.119.144.200:8000${endpoint}`, {
+        const response = await fetch(`https://finance.lxv.uz${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),

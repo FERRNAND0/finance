@@ -9,7 +9,7 @@ import {
   Edit2,
   X,
   Save,
-  Lock
+  Lock,
 } from "lucide-react";
 import { useApp } from "../contexts/AppContext";
 import { useT } from "../i18n/translations";
@@ -40,7 +40,9 @@ export function SettingsPage() {
 
   // Стейты для редактирования профиля
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [editFirstName, setEditFirstName] = useState(currentUser?.firstName || "");
+  const [editFirstName, setEditFirstName] = useState(
+    currentUser?.firstName || "",
+  );
   const [editLastName, setEditLastName] = useState(currentUser?.lastName || "");
   const [editEmail, setEditEmail] = useState(currentUser?.email || "");
   const [editPassword, setEditPassword] = useState("");
@@ -55,7 +57,7 @@ export function SettingsPage() {
     setIsSaving(true);
     try {
       const token = localStorage.getItem("access");
-        const res = await fetch("http://75.119.144.200:8000/api/auth/update/", {
+      const res = await fetch("https://finance.lxv.uz/api/auth/update/", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -96,11 +98,15 @@ export function SettingsPage() {
     : "SF";
 
   const cardCls = "liquid-glass rounded-2xl overflow-hidden";
-  const sectionHead = "px-5 py-3.5 border-b border-white/20 dark:border-border flex items-center justify-between";
+  const sectionHead =
+    "px-5 py-3.5 border-b border-white/20 dark:border-border flex items-center justify-between";
 
   return (
     <div className="p-4 lg:p-6 2xl:p-10 max-w-xl 2xl:max-w-2xl space-y-5">
-      <h1 className="text-foreground" style={{ fontSize: "1.4rem", fontWeight: 700 }}>
+      <h1
+        className="text-foreground"
+        style={{ fontSize: "1.4rem", fontWeight: 700 }}
+      >
         {t("settingsTitle") || "Настройки"}
       </h1>
 
@@ -109,12 +115,15 @@ export function SettingsPage() {
         <div className={sectionHead}>
           <div className="flex items-center gap-2">
             <UserIcon size={15} className="text-primary" />
-            <h2 className="text-foreground" style={{ fontSize: "0.9rem", fontWeight: 600 }}>
+            <h2
+              className="text-foreground"
+              style={{ fontSize: "0.9rem", fontWeight: 600 }}
+            >
               {t("profileSection") || "Профиль"}
             </h2>
           </div>
           {!isEditingProfile ? (
-            <button 
+            <button
               onClick={() => setIsEditingProfile(true)}
               className="text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
               style={{ fontSize: "0.75rem", fontWeight: 600 }}
@@ -122,7 +131,7 @@ export function SettingsPage() {
               <Edit2 size={12} /> Изменить
             </button>
           ) : (
-            <button 
+            <button
               onClick={() => {
                 setIsEditingProfile(false);
                 setEditFirstName(currentUser?.firstName || "");
@@ -148,10 +157,16 @@ export function SettingsPage() {
                 <span className="text-primary">{initials}</span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-foreground truncate" style={{ fontSize: "1.2rem", fontWeight: 700 }}>
+                <p
+                  className="text-foreground truncate"
+                  style={{ fontSize: "1.2rem", fontWeight: 700 }}
+                >
                   {currentUser?.firstName} {currentUser?.lastName}
                 </p>
-                <p className="text-muted-foreground truncate mt-0.5" style={{ fontSize: "0.85rem" }}>
+                <p
+                  className="text-muted-foreground truncate mt-0.5"
+                  style={{ fontSize: "0.85rem" }}
+                >
                   {currentUser?.email}
                 </p>
               </div>
@@ -161,7 +176,9 @@ export function SettingsPage() {
             <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">Имя</label>
+                  <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">
+                    Имя
+                  </label>
                   <input
                     type="text"
                     value={editFirstName}
@@ -170,7 +187,9 @@ export function SettingsPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">Фамилия</label>
+                  <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">
+                    Фамилия
+                  </label>
                   <input
                     type="text"
                     value={editLastName}
@@ -181,7 +200,9 @@ export function SettingsPage() {
               </div>
 
               <div className="space-y-1">
-                <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">Email (Почта)</label>
+                <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">
+                  Email (Почта)
+                </label>
                 <input
                   type="email"
                   value={editEmail}
@@ -192,7 +213,8 @@ export function SettingsPage() {
 
               <div className="space-y-1 pt-2 border-t border-white/10">
                 <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1 flex items-center gap-1">
-                  <Lock size={10}/> Новый пароль (оставьте пустым, если не хотите менять)
+                  <Lock size={10} /> Новый пароль (оставьте пустым, если не
+                  хотите менять)
                 </label>
                 <input
                   type="password"
@@ -208,7 +230,13 @@ export function SettingsPage() {
                 disabled={isSaving}
                 className="w-full py-2.5 mt-2 rounded-xl bg-primary text-white font-bold hover:bg-primary/90 disabled:opacity-50 transition-all flex items-center justify-center gap-2 text-sm shadow-lg shadow-primary/20"
               >
-                {isSaving ? "Сохранение..." : <><Save size={16}/> Сохранить изменения</>}
+                {isSaving ? (
+                  "Сохранение..."
+                ) : (
+                  <>
+                    <Save size={16} /> Сохранить изменения
+                  </>
+                )}
               </button>
             </div>
           )}
@@ -219,8 +247,15 @@ export function SettingsPage() {
       <section className={cardCls}>
         <div className={sectionHead}>
           <div className="flex items-center gap-2">
-            {theme === "dark" ? <Moon size={15} className="text-primary" /> : <Sun size={15} className="text-primary" />}
-            <h2 className="text-foreground" style={{ fontSize: "0.9rem", fontWeight: 600 }}>
+            {theme === "dark" ? (
+              <Moon size={15} className="text-primary" />
+            ) : (
+              <Sun size={15} className="text-primary" />
+            )}
+            <h2
+              className="text-foreground"
+              style={{ fontSize: "0.9rem", fontWeight: 600 }}
+            >
               {t("appearanceSection")}
             </h2>
           </div>
@@ -236,11 +271,22 @@ export function SettingsPage() {
                 onClick={() => item.key !== theme && toggleTheme()}
                 className={`flex items-center gap-2.5 p-3 rounded-xl border-2 transition-all ${theme === item.key ? "border-primary bg-primary/10" : "border-white/30 dark:border-border hover:border-primary/40"}`}
               >
-                <div className="w-5 h-5 rounded border border-border flex-shrink-0" style={{ backgroundColor: item.color }} />
-                <span className="text-foreground flex-1 text-left" style={{ fontSize: "0.82rem", fontWeight: theme === item.key ? 600 : 400 }}>
+                <div
+                  className="w-5 h-5 rounded border border-border flex-shrink-0"
+                  style={{ backgroundColor: item.color }}
+                />
+                <span
+                  className="text-foreground flex-1 text-left"
+                  style={{
+                    fontSize: "0.82rem",
+                    fontWeight: theme === item.key ? 600 : 400,
+                  }}
+                >
                   {item.label}
                 </span>
-                {theme === item.key && <Check size={13} className="text-primary" />}
+                {theme === item.key && (
+                  <Check size={13} className="text-primary" />
+                )}
               </button>
             ))}
           </div>
@@ -252,7 +298,10 @@ export function SettingsPage() {
         <div className={sectionHead}>
           <div className="flex items-center gap-2">
             <Globe size={15} className="text-primary" />
-            <h2 className="text-foreground" style={{ fontSize: "0.9rem", fontWeight: 600 }}>
+            <h2
+              className="text-foreground"
+              style={{ fontSize: "0.9rem", fontWeight: 600 }}
+            >
               {t("languageSection")}
             </h2>
           </div>
@@ -266,10 +315,18 @@ export function SettingsPage() {
                 className={`flex flex-col items-center gap-1.5 p-3.5 rounded-xl border-2 transition-all ${language === lang.code ? "border-primary bg-primary/10" : "border-white/30 dark:border-border hover:border-primary/40 hover:bg-white/15 dark:hover:bg-muted/40"}`}
               >
                 <span style={{ fontSize: "1.6rem" }}>{lang.flag}</span>
-                <span className="text-foreground" style={{ fontSize: "0.78rem", fontWeight: language === lang.code ? 600 : 400 }}>
+                <span
+                  className="text-foreground"
+                  style={{
+                    fontSize: "0.78rem",
+                    fontWeight: language === lang.code ? 600 : 400,
+                  }}
+                >
                   {lang.label}
                 </span>
-                {language === lang.code && <Check size={12} className="text-primary" />}
+                {language === lang.code && (
+                  <Check size={12} className="text-primary" />
+                )}
               </button>
             ))}
           </div>
@@ -284,12 +341,15 @@ export function SettingsPage() {
           </div>
           <div>
             <h3 className="text-red-500 font-bold text-lg">Опасная зона</h3>
-            <p className="text-gray-400 text-sm">Сброс всех финансовых данных</p>
+            <p className="text-gray-400 text-sm">
+              Сброс всех финансовых данных
+            </p>
           </div>
         </div>
 
         <p className="text-gray-300 text-sm mb-6">
-          Это действие навсегда удалит все ваши доходы и расходы. Восстановить их будет невозможно.
+          Это действие навсегда удалит все ваши доходы и расходы. Восстановить
+          их будет невозможно.
         </p>
 
         {!showDanger ? (

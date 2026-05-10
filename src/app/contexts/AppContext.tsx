@@ -52,7 +52,7 @@ export const useApp = () => {
   return ctx;
 };
 
-const API_URL = "http://75.119.144.200:8000/api";
+const API_URL = "https://finance.lxv.uz/api";
 
 export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);

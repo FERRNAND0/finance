@@ -15,7 +15,7 @@ ROOT_URLCONF = 'core.urls'
 DEBUG = False
 
 # Укажи здесь свой домен и IP сервера Contabo
-ALLOWED_HOSTS = ['finance.lxv.uz', '75.119.144.200', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = ['finance.lxv.uz', '75.119.144.200']
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -53,13 +53,11 @@ MIDDLEWARE = [
 ]
 # Разрешаем твоему фронтенду слать запросы
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-    "http://127.0.0.1:5173",
-    "http://75.119.144.200:5173", # <-- Обязательно добавь это
-    "http://75.119.144.200",
-"http://finance.lxv.uz",
-    "https://finance.lxv.uz",      # <-- И это (если будешь запускать без порта 5173)
+"https://finance.lxv.uz",
+    "http://finance.lxv.uz",    # <-- И это (если будешь запускать без порта 5173)
 ]
+CSRF_TRUSTED_ORIGINS = ["https://finance.lxv.uz"]
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 # Конфиг JWT
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
