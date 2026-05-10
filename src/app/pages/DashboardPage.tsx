@@ -156,7 +156,7 @@ export function DashboardPage() {
     setAiLoading(true);
     try {
       const token = localStorage.getItem("access");
-      const res = await fetch("http://127.0.0.1:8000/api/ai-tips/", {
+      const res = await fetch("https://finance.lxv.uz/api/ai-tips/", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
