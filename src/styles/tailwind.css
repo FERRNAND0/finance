@@ -1,0 +1,7 @@
+/* 1. Сначала все импорты */
+@import "tailwindcss" source(none);
+@import "./theme.css";
+@import "tw-animate-css";
+
+/* 2. Только потом настройки и кастомные стили */
+@source '../**/*.{js,ts,jsx,tsx}';

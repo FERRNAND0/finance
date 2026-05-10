@@ -1,0 +1,78 @@
+/* --- 1. ВСЕ ИМПОРТЫ СТРОГО ВВЕРХУ --- */
+@import "tailwindcss" source(none);
+@import './fonts.css';
+@import "./theme.css";
+@import "tw-animate-css";
+
+/* --- 2. НАСТРОЙКИ ПУТЕЙ (для Tailwind v4) --- */
+@source '../**/*.{js,ts,jsx,tsx}';
+
+/* --- 3. ТВОИ КАСТОМНЫЕ СТИЛИ (Liquid Glass) --- */
+
+/* Liquid Glass – light mode */
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.52);
+  backdrop-filter: blur(26px) saturate(200%) brightness(1.04);
+  -webkit-backdrop-filter: blur(26px) saturate(200%) brightness(1.04);
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  box-shadow:
+    0 8px 32px rgba(109, 40, 217, 0.06),
+    0 1px 0 rgba(255, 255, 255, 0.92) inset,
+    0 -1px 0 rgba(109, 40, 217, 0.04) inset;
+}
+
+/* Liquid Glass – dark mode */
+.dark .liquid-glass {
+  background: var(--card);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: var(--border);
+  box-shadow: none;
+}
+
+.glass-sidebar {
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  border-right: 1px solid rgba(255, 255, 255, 0.60);
+  box-shadow: 4px 0 24px rgba(109, 40, 217, 0.04);
+}
+
+.dark .glass-sidebar {
+  background: var(--sidebar);
+  border-right-color: var(--sidebar-border);
+}
+
+.glass-header {
+  background: rgba(255, 255, 255, 0.50);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.65);
+}
+
+.dark .glass-header {
+  background: var(--sidebar);
+  border-bottom-color: var(--sidebar-border);
+}
+
+.glass-modal {
+  background: rgba(255, 255, 255, 0.60);
+  backdrop-filter: blur(36px) saturate(220%);
+  -webkit-backdrop-filter: blur(36px) saturate(220%);
+  border: 1px solid rgba(255, 255, 255, 0.80);
+  box-shadow:
+    0 24px 64px rgba(109, 40, 217, 0.10),
+    0 1px 0 rgba(255, 255, 255, 0.95) inset;
+}
+
+.dark .glass-modal {
+  background: var(--card);
+  border-color: var(--border);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.40);
+}
+
+/* Topography lines */
+.topo-line {
+  fill: none;
+  stroke-width: 1.2;
+}
