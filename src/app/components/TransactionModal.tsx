@@ -41,11 +41,10 @@ export function TransactionModal({
   const [category, setCategory] = useState(
     defaultType === "income" ? INCOME_CATEGORIES[0] : SPENDING_CATEGORIES[0],
   );
-  const [reason, setReason] = useState(""); // Это наше точное название (куда ушли деньги)
+  const [reason, setReason] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [loading, setLoading] = useState(false);
 
-  // Сбрасываем форму при открытии
   useEffect(() => {
     if (isOpen) {
       setType(defaultType);
@@ -95,9 +94,9 @@ export function TransactionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 dark:bg-background/80 backdrop-blur-sm">
       <div
-        className="liquid-glass w-full max-w-md rounded-3xl shadow-2xl border border-white/10 bg-[#0b000b]/80 relative overflow-hidden"
+        className="liquid-glass w-full max-w-md rounded-3xl shadow-2xl border border-gray-200 dark:border-white/10 bg-white/95 dark:bg-[#0b000b]/90 relative overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div
@@ -106,25 +105,25 @@ export function TransactionModal({
 
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+          className="absolute top-4 right-4 text-gray-500 dark:text-gray-400 hover:text-black dark:hover:text-white transition-colors"
         >
           <X size={20} />
         </button>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5">
-          <h2 className="text-xl font-bold text-white mb-2">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
             {type === "income" ? t("addIncome") : t("addSpending")}
           </h2>
 
           {/* Переключатель Доход / Расход */}
-          <div className="flex p-1 bg-white/5 rounded-xl border border-white/10">
+          <div className="flex p-1 bg-black/5 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/10">
             <button
               type="button"
               onClick={() => handleTypeChange("income")}
               className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
                 type === "income"
-                  ? "bg-emerald-500/20 text-emerald-400 shadow-sm"
-                  : "text-gray-400 hover:text-gray-200"
+                  ? "bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 shadow-sm"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
               }`}
             >
               {t("incomeTab") || "Доход"}
@@ -134,8 +133,8 @@ export function TransactionModal({
               onClick={() => handleTypeChange("spending")}
               className={`flex-1 py-2 text-sm font-medium rounded-lg transition-all ${
                 type === "spending"
-                  ? "bg-rose-500/20 text-rose-400 shadow-sm"
-                  : "text-gray-400 hover:text-gray-200"
+                  ? "bg-rose-500/20 text-rose-600 dark:text-rose-400 shadow-sm"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
               }`}
             >
               {t("spendingTab") || "Расход"}
@@ -153,11 +152,11 @@ export function TransactionModal({
               value={amount}
               onChange={(e) => setAmount(e.target.value)}
               placeholder="0.00"
-              className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-purple-500/50 outline-none transition-all text-lg font-semibold"
+              className="w-full px-4 py-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500/50 outline-none transition-all text-lg font-semibold"
             />
           </div>
 
-          {/* Поле: Категория (Выпадающий список для ИИ) */}
+          {/* Поле: Категория */}
           <div className="space-y-1.5">
             <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">
               Категория
@@ -165,7 +164,7 @@ export function TransactionModal({
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-purple-500/50 outline-none transition-all appearance-none"
+              className="w-full px-4 py-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500/50 outline-none transition-all appearance-none"
             >
               {(type === "income"
                 ? INCOME_CATEGORIES
@@ -174,7 +173,7 @@ export function TransactionModal({
                 <option
                   key={cat}
                   value={cat}
-                  className="bg-[#0b000b] text-white"
+                  className="bg-white dark:bg-[#0b000b] text-gray-900 dark:text-white"
                 >
                   {cat}
                 </option>
@@ -182,7 +181,7 @@ export function TransactionModal({
             </select>
           </div>
 
-          {/* Поле: Название / Описание (Точно куда ушли деньги) */}
+          {/* Поле: Название / Описание */}
           <div className="space-y-1.5">
             <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">
               Название / Детали
@@ -196,7 +195,7 @@ export function TransactionModal({
                   ? "Например: Кофе в Старбакс"
                   : "Например: Аванс за проект"
               }
-              className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-purple-500/50 outline-none transition-all"
+              className="w-full px-4 py-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500/50 outline-none transition-all"
             />
           </div>
 
@@ -209,7 +208,7 @@ export function TransactionModal({
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-purple-500/50 outline-none transition-all [color-scheme:dark]"
+              className="w-full px-4 py-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500/50 outline-none transition-all dark:[color-scheme:dark]"
             />
           </div>
 
