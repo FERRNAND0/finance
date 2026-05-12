@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { ExpenseChart } from "../components/ExpenseChart";
 import {
   TrendingUp,
   TrendingDown,
@@ -384,7 +385,9 @@ export function DashboardPage() {
               </p>
             </div>
           </div>
-
+          <div className="mt-6">
+            <ExpenseChart />
+          </div>
           {/* Quick actions */}
           <div className="grid grid-cols-2 gap-3">
             <button
@@ -674,6 +677,26 @@ export function DashboardPage() {
         onClose={() => setModalOpen(false)}
         defaultType={modalType}
       />
+      {/* Плавающая кнопка добавления (FAB) - видна только на мобильных (md:hidden) */}
+      <button
+        onClick={() => setIsModalOpen(true)} // Тут используй функцию открытия твоей модалки
+        className="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-purple-600 text-white rounded-full flex items-center justify-center shadow-xl shadow-purple-500/30 z-40 active:scale-95 transition-transform"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      </button>
     </div>
   );
 }
