@@ -678,14 +678,22 @@ export function DashboardPage() {
         defaultType={modalType}
       />
       {/* Плавающая кнопка добавления (FAB) - видна только на мобильных (md:hidden) */}
+      {/* Плавающая кнопка добавления (FAB) - видна только на мобильных (md:hidden) */}
+      {/* Плавающая кнопка (FAB) - Анимированная, стеклянная, работает как переключатель */}
       <button
-        onClick={() => setIsModalOpen(true)} // Тут используй функцию открытия твоей модалки
-        className="md:hidden fixed bottom-6 right-6 w-14 h-14 bg-purple-600 text-white rounded-full flex items-center justify-center shadow-xl shadow-purple-500/30 z-40 active:scale-95 transition-transform"
+        onClick={() =>
+          modalOpen ? setModalOpen(false) : openModal("spending")
+        }
+        className={`md:hidden fixed bottom-24 right-6 w-14 h-14 rounded-full flex items-center justify-center z-[60] active:scale-95 transition-all duration-300 backdrop-blur-xl border shadow-xl ${
+          modalOpen
+            ? "bg-rose-500/30 border-rose-500/30 shadow-rose-500/20 text-rose-100 rotate-[135deg]"
+            : "bg-purple-500/30 border-purple-400/30 shadow-purple-500/20 text-white rotate-0 hover:bg-purple-500/40"
+        }`}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
+          width="26"
+          height="26"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
