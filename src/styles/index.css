@@ -106,3 +106,52 @@
 .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background-color: rgba(255, 255, 255, 0.3);
 }
+/* Наш фирменный (По умолчанию) */
+.theme-default {
+  --background: 11 0 11;
+  /* #0b000b */
+  --primary: 139 92 246;
+  /* Фиолетовый #8b5cf6 */
+}
+
+/* Черно-белый */
+.theme-bw {
+  --background: 0 0 0;
+  /* Черный */
+  --primary: 255 255 255;
+  /* Белый */
+}
+
+/* Чисто Белый */
+.theme-white {
+  --background: 255 255 255;
+  /* Белый */
+  --foreground: 0 0 0;
+  /* Черный текст */
+  --primary: 0 0 0;
+  /* Черные акценты */
+}
+
+/* Серый графит */
+.theme-gray {
+  --background: 17 24 39;
+  /* Темно-серый */
+  --primary: 156 163 175;
+  /* Светло-серый */
+}
+
+/* Морской зеленый */
+.theme-sea-green {
+  --background: 6 78 59;
+  /* Темно-зеленый */
+  --primary: 16 185 129;
+  /* Изумрудный */
+}
+
+/* Морской синий */
+.theme-sea-blue {
+  --background: 12 74 110;
+  /* Темно-синий */
+  --primary: 14 165 233;
+  /* Небесно-голубой */
+}

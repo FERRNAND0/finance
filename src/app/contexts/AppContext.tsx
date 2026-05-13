@@ -30,13 +30,15 @@ interface AppContextType {
   theme: string;
   language: string;
   transactions: Transaction[];
-  openAIKey: string; 
+  openAIKey: string;
   setOpenAIKey: (key: string) => void;
   verifyCode: (email: string, code: string) => Promise<boolean>;
   logout: () => void;
   addTransaction: (tx: any) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;
-  deleteAllTransactions: (password: string) => Promise<{ success: boolean; error?: string }>;
+  deleteAllTransactions: (
+    password: string,
+  ) => Promise<{ success: boolean; error?: string }>;
   getBalance: () => number;
   getUserTransactions: () => Transaction[];
   toggleTheme: () => void;
@@ -58,15 +60,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [theme, setTheme] = useState(localStorage.getItem("sf_theme") || "dark");
-  const [language, setLang] = useState(localStorage.getItem("sf_language") || "ru");
-  const [openAIKey, setOpenAIKey] = useState(localStorage.getItem('sf_openai') || '');
+  const [theme, setTheme] = useState(
+    localStorage.getItem("sf_theme") || "dark",
+  );
+  const [language, setLang] = useState(
+    localStorage.getItem("sf_language") || "ru",
+  );
+  const [openAIKey, setOpenAIKey] = useState(
+    localStorage.getItem("sf_openai") || "",
+  );
 
   const updateUser = (data: Partial<User>) => {
     if (!currentUser) return;
     const updated = { ...currentUser, ...data };
     setCurrentUser(updated);
-    localStorage.setItem('sf_user', JSON.stringify(updated));
+    localStorage.setItem("sf_user", JSON.stringify(updated));
   };
 
   const authFetch = async (url: string, options: any = {}) => {
@@ -155,7 +163,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const data = await res.json();
 
       if (res.ok) {
-        await fetchTransactions(); 
+        await fetchTransactions();
         return { success: true };
       } else {
         return { success: false, error: data.error || "Ошибка при удалении" };
@@ -171,12 +179,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setTransactions([]);
   };
 
-  const toggleTheme = () => {
-    const newTheme = theme === "dark" ? "light" : "dark";
-    setTheme(newTheme);
-    localStorage.setItem("sf_theme", newTheme);
-  };
+  const setThemeState = (newTheme: string) => {
+    setThemeState(newTheme);
+    localStorage.setItem("app_theme", newTheme);
 
+    // Убираем старые классы и добавляем новый (например "theme-sea-green")
+    document.documentElement.className = "";
+    document.documentElement.classList.add(`theme-${newTheme}`);
+  };
   const setLanguage = (l: string) => {
     setLang(l);
     localStorage.setItem("sf_language", l);

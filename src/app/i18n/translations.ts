@@ -1,6 +1,12 @@
 export const translations = {
   en: {
     // App
+    theme_default: "Our Signature",
+    theme_bw: "Black & White",
+    theme_white: "Pure White",
+    theme_gray: "Graphite Gray",
+    theme_sea_green: "Sea Green",
+    theme_sea_blue: "Sea Blue",
     appName: "S&F",
     appSubtitle: "System & Finance",
     // Piggy Bank & Placeholders
@@ -162,6 +168,12 @@ export const translations = {
   },
 
   ru: {
+    theme_default: "Наш фирменный",
+    theme_bw: "Черно-белый",
+    theme_white: "Чисто белый",
+    theme_gray: "Серый графит",
+    theme_sea_green: "Морской зеленый",
+    theme_sea_blue: "Морской синий",
     appName: "S&F",
     appSubtitle: "Система и Финансы",
     lang_ru: "Русский",
