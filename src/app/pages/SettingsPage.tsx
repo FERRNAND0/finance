@@ -290,47 +290,39 @@ export function SettingsPage() {
           </div>
         </div>
       </section>
+      {/* Секция Язык */}
+      <div className="space-y-4">
+        <h3 className="text-gray-900 dark:text-white font-semibold text-lg flex items-center gap-2">
+          <span className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
+            🌐
+          </span>
+          {t("languageSection")}
+        </h3>
 
-      {/* ── Language ────────────────────────────────── */}
-      <section className={cardCls}>
-        <div className={sectionHead}>
-          <div className="flex items-center gap-2">
-            <Globe size={15} className="text-primary" />
-            <h2
-              className="text-foreground"
-              style={{ fontSize: "0.9rem", fontWeight: 600 }}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          {[
+            { code: "en", label: t("lang_en") },
+            { code: "ru", label: t("lang_ru") },
+            { code: "uzb", label: t("lang_uzb") },
+            { code: "kk", label: t("lang_kk") },
+            { code: "ky", label: t("lang_ky") },
+            { code: "de", label: t("lang_de") },
+            { code: "lb", label: t("lang_lb") },
+          ].map((lang) => (
+            <button
+              key={lang.code}
+              onClick={() => setLanguage(lang.code)}
+              className={`px-4 py-3 rounded-2xl text-sm font-semibold transition-all border ${
+                language === lang.code
+                  ? "bg-purple-500/15 border-purple-500/50 text-purple-600 dark:text-purple-400 shadow-sm"
+                  : "bg-black/5 dark:bg-white/5 border-transparent text-gray-500 dark:text-gray-400 hover:bg-black/10 dark:hover:bg-white/10"
+              }`}
             >
-              {t("languageSection")}
-            </h2>
-          </div>
+              {lang.label}
+            </button>
+          ))}
         </div>
-        <div className="p-5">
-          <div className="grid grid-cols-3 gap-3">
-            {LANGS.map((lang) => (
-              <button
-                key={lang.code}
-                onClick={() => setLanguage(lang.code as any)}
-                className={`flex flex-col items-center gap-1.5 p-3.5 rounded-xl border-2 transition-all ${language === lang.code ? "border-primary bg-primary/10" : "border-white/30 dark:border-border hover:border-primary/40 hover:bg-white/15 dark:hover:bg-muted/40"}`}
-              >
-                <span style={{ fontSize: "1.6rem" }}>{lang.flag}</span>
-                <span
-                  className="text-foreground"
-                  style={{
-                    fontSize: "0.78rem",
-                    fontWeight: language === lang.code ? 600 : 400,
-                  }}
-                >
-                  {lang.label}
-                </span>
-                {language === lang.code && (
-                  <Check size={12} className="text-primary" />
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      </section>
-
+      </div>
       {/* ── Danger Zone ──────────────────────────── */}
       <div className="mt-8 liquid-glass rounded-3xl p-6 sm:p-8 border border-red-500/20 bg-red-500/5">
         <div className="flex items-center gap-3 mb-4">
