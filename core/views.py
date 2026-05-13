@@ -82,7 +82,6 @@ import json
 from openai import OpenAI
 
 from .models import Transaction
-
 class AITipsView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -91,34 +90,49 @@ class AITipsView(APIView):
         if not getattr(settings, 'OPENAI_API_KEY', None):
             return Response({"error": "OpenAI API Key is not configured on the server"}, status=500)
 
+        # --- ИЗВЛЕКАЕМ ЯЗЫК ИЗ ЗАПРОСА ---
+        user_lang_code = request.GET.get('lang', 'ru') # Получаем язык с фронтенда (по умолчанию ru)
+        
+        # Маппинг кодов в полные названия (чтобы ChatGPT точно понял, какой язык нужен)
+        lang_map = {
+            'en': 'English',
+            'ru': 'Russian',
+            'uzb': 'Uzbek',
+            'kk': 'Kazakh',
+            'ky': 'Kyrgyz',
+            'de': 'German',
+            'lb': 'Luxembourgish'
+        }
+        target_language = lang_map.get(user_lang_code, 'English')
+
         # 2. Собираем транзакции пользователя за последние 7 дней
         one_week_ago = timezone.now().date() - timedelta(days=7)
         recent_txs = Transaction.objects.filter(user=request.user, date__gte=one_week_ago)
 
         if not recent_txs.exists():
-            return Response({"tip": "Добавьте транзакции за эту неделю, чтобы получить совет от AI."})
+            return Response({"tip": "Add transactions this week to get an AI tip."})
 
         # 3. Подготавливаем данные для AI (группируем траты)
         spending_total = 0
         income_total = 0
         categories = {}
 
-   # Внутри AITipsView.get()
         for tx in recent_txs:
             amount = float(tx.amount)
             if tx.type == 'spending':
                 spending_total += amount
-                # ГРУППИРУЕМ ПО КАТЕГОРИИ
                 categories[tx.category] = categories.get(tx.category, 0) + amount
             else:
                 income_total += amount
-        # 4. Формируем промпт для ChatGPT
+                
+        # 4. Формируем промпт на английском (GPT лучше понимает команды на англ) 
+        # и жестко требуем ответ на выбранном языке
         prompt = (
-            f"Я анализирую свои финансы. За последнюю неделю мой доход составил ${income_total:.2f}, "
-            f"а расходы ${spending_total:.2f}. "
-            f"Мои траты по категориям: {json.dumps(categories, ensure_ascii=False)}. "
-            "Дай мне ОДИН краткий финансовый инсайт и порекомендуй дневной лимит трат на следующую неделю. "
-            "Ответ должен быть коротким (не более 4 предложений) и на русском языке."
+            f"I am analyzing my finances. Last week my income was ${income_total:.2f}, "
+            f"and my expenses were ${spending_total:.2f}. "
+            f"My spending by category: {json.dumps(categories, ensure_ascii=False)}. "
+            f"Give me ONE brief financial insight and recommend a daily spending limit for next week. "
+            f"Keep it under 4 sentences. YOU MUST REPLY ENTIRELY IN {target_language.upper()} LANGUAGE."
         )
 
         # 5. Делаем запрос к OpenAI
@@ -127,10 +141,16 @@ class AITipsView(APIView):
             response = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
-                    {"role": "system", "content": "Ты финансовый советник, интегрированный в банковское приложение."},
-                    {"role": "user", "content": prompt}
+                    {
+                        "role": "system", 
+                        "content": f"You are a financial advisor integrated into an app. You must respond in {target_language}."
+                    },
+                    {
+                        "role": "user", 
+                        "content": prompt
+                    }
                 ],
-                max_tokens=150,
+                max_tokens=200, # Увеличил лимит, так как немецкий и казахский могут быть длиннее
                 temperature=0.7
             )
             ai_tip = response.choices[0].message.content

@@ -13,7 +13,7 @@ import {
   Search,
   Trash2,
   Download,
-  ChevronDown, // <-- Иконка стрелочки для меню валют
+  ChevronDown,
 } from "lucide-react";
 import {
   AreaChart,
@@ -54,10 +54,12 @@ const SwipeableTransaction = ({
   tx,
   onDelete,
   formatCurrency,
+  translateCat, // <-- Добавили пропс для перевода категории
 }: {
   tx: any;
   onDelete: (id: string) => void;
   formatCurrency: (n: number) => string;
+  translateCat: (cat: string) => string;
 }) => {
   const [translateX, setTranslateX] = useState(0);
   const startXRef = useRef(0);
@@ -71,21 +73,15 @@ const SwipeableTransaction = ({
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!isDraggingRef.current) return;
     const deltaX = e.touches[0].clientX - startXRef.current;
-
-    if (deltaX < 0) {
-      setTranslateX(Math.max(deltaX, -80));
-    } else if (translateX < 0 && deltaX > 0) {
+    if (deltaX < 0) setTranslateX(Math.max(deltaX, -80));
+    else if (translateX < 0 && deltaX > 0)
       setTranslateX(Math.min(translateX + deltaX, 0));
-    }
   };
 
   const handleTouchEnd = () => {
     isDraggingRef.current = false;
-    if (translateX < -40) {
-      setTranslateX(-80);
-    } else {
-      setTranslateX(0);
-    }
+    if (translateX < -40) setTranslateX(-80);
+    else setTranslateX(0);
   };
 
   return (
@@ -115,14 +111,14 @@ const SwipeableTransaction = ({
               className="text-foreground truncate"
               style={{ fontSize: "0.85rem", fontWeight: 500 }}
             >
-              {tx.reason || tx.category}
+              {tx.reason || translateCat(tx.category)}
             </p>
             <p
               className="text-muted-foreground flex gap-2"
               style={{ fontSize: "0.72rem" }}
             >
               <span className="text-purple-500 dark:text-purple-400">
-                {tx.category}
+                {translateCat(tx.category)}
               </span>
               <span>•</span>
               <span>{new Date(tx.date).toLocaleDateString()}</span>
@@ -163,13 +159,10 @@ export function DashboardPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<"income" | "spending">("income");
   const [period, setPeriod] = useState<"week" | "month" | "all">("month");
-
   const [currency, setCurrency] = useState<CurrencyType>(
     () => (localStorage.getItem("app_currency") as CurrencyType) || "USD",
   );
   const [rates, setRates] = useState<Record<string, number>>({ USD: 1 });
-
-  // Состояние для выпадающего меню валют
   const [isCurrencyMenuOpen, setIsCurrencyMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -195,16 +188,32 @@ export function DashboardPage() {
         UZS: "uz-UZ",
       };
       const rate = rates[currency] || 1;
-      const convertedAmount = n * rate;
-
       return new Intl.NumberFormat(locales[currency], {
         style: "currency",
         currency: currency,
         minimumFractionDigits: ["UZS", "KZT", "KGS"].includes(currency) ? 0 : 2,
-      }).format(convertedAmount);
+      }).format(n * rate);
     },
     [currency, rates],
   );
+
+  const translateCat = (cat: string) => {
+    const map: Record<string, string> = {
+      Зарплата: t("cat_salary"),
+      Фриланс: t("cat_freelance"),
+      Инвестиции: t("cat_investments"),
+      Подарки: t("cat_gifts"),
+      Перевод: t("cat_transfers"),
+      Другое: t("cat_other"),
+      Продукты: t("cat_food"),
+      Транспорт: t("cat_transport"),
+      Жилье: t("cat_housing"),
+      Развлечения: t("cat_entertainment"),
+      Здоровье: t("cat_health"),
+      Одежда: t("cat_clothing"),
+    };
+    return map[cat] || cat;
+  };
 
   const ChartTip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
@@ -271,8 +280,9 @@ export function DashboardPage() {
   const spendMap: Record<string, number> = {};
   filtered
     .filter((t) => t.type === "spending")
-    .forEach((t) => {
-      spendMap[t.reason] = (spendMap[t.reason] || 0) + t.amount;
+    .forEach((tx) => {
+      const catName = translateCat(tx.category);
+      spendMap[catName] = (spendMap[catName] || 0) + tx.amount;
     });
   const spendData = Object.entries(spendMap)
     .map(([n, v]) => ({ name: n, value: v }))
@@ -282,8 +292,9 @@ export function DashboardPage() {
   const incMap: Record<string, number> = {};
   filtered
     .filter((t) => t.type === "income")
-    .forEach((t) => {
-      incMap[t.reason] = (incMap[t.reason] || 0) + t.amount;
+    .forEach((tx) => {
+      const catName = translateCat(tx.category);
+      incMap[catName] = (incMap[catName] || 0) + tx.amount;
     });
   const incData = Object.entries(incMap)
     .map(([n, v]) => ({ name: n, value: v }))
@@ -296,7 +307,7 @@ export function DashboardPage() {
       const query = searchQuery.toLowerCase();
       return (
         (tx.reason || "").toLowerCase().includes(query) ||
-        (tx.category || "").toLowerCase().includes(query)
+        translateCat(tx.category).toLowerCase().includes(query)
       );
     })
     .sort(
@@ -316,12 +327,11 @@ export function DashboardPage() {
       const res = await fetch(
         `https://finance.lxv.uz/api/ai-tips/?lang=${language}`,
         {
-          // Добавили ?lang=
           method: "GET",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
-            "Accept-Language": language, // И в заголовки на всякий случай
+            "Accept-Language": language,
           },
         },
       );
@@ -332,7 +342,7 @@ export function DashboardPage() {
       setAiText("Нет связи с сервером AI.");
     }
     setAiLoading(false);
-  }, [all.length]);
+  }, [all.length, language]);
 
   useEffect(() => {
     if (all.length > 0) fetchAI();
@@ -347,10 +357,8 @@ export function DashboardPage() {
     try {
       if (deleteTransaction) {
         await deleteTransaction(id);
-        toast.success("Транзакция удалена");
-      } else {
-        toast.error("Функция удаления еще не подключена к бэкенду");
-      }
+        toast.success(t("transactionDeleted"));
+      } else toast.error("Функция удаления еще не подключена к бэкенду");
     } catch (e) {
       toast.error("Ошибка при удалении");
     }
@@ -358,7 +366,7 @@ export function DashboardPage() {
 
   const handleExportExcel = () => {
     if (all.length === 0) {
-      toast.error("Нет данных для экспорта");
+      toast.error(t("noData"));
       return;
     }
     const headers = [
@@ -371,7 +379,7 @@ export function DashboardPage() {
     ];
     const rows = all.map((tx) => [
       tx.type === "income" ? "Доход" : "Расход",
-      `"${tx.category}"`,
+      `"${translateCat(tx.category)}"`,
       `"${tx.reason || ""}"`,
       tx.amount,
       currency,
@@ -409,7 +417,9 @@ export function DashboardPage() {
               ? "Добрый день"
               : language === "uzb"
                 ? "Xayrli kun"
-                : "Good day"}
+                : language === "de"
+                  ? "Guten Tag"
+                  : "Good day"}
             , <span className="text-primary">{currentUser?.firstName}</span>
           </h1>
           <p
@@ -419,8 +429,8 @@ export function DashboardPage() {
             {new Date().toLocaleDateString(
               language === "ru"
                 ? "ru-RU"
-                : language === "uzb"
-                  ? "uz-UZ"
+                : language === "de"
+                  ? "de-DE"
                   : "en-US",
               {
                 weekday: "long",
@@ -433,7 +443,6 @@ export function DashboardPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 self-start xl:self-auto">
-          {/* Периоды */}
           <div className="flex bg-white/30 dark:bg-muted rounded-xl p-1 gap-1 backdrop-blur-sm border border-white/40 dark:border-border">
             {(["week", "month", "all"] as const).map((p) => (
               <button
@@ -454,7 +463,6 @@ export function DashboardPage() {
           <button
             onClick={handleExportExcel}
             className="p-2 h-[34px] w-[34px] bg-purple-600/10 text-purple-600 dark:text-purple-400 rounded-xl hover:bg-purple-600/20 transition-all border border-purple-500/20 flex items-center justify-center shadow-sm active:scale-95"
-            title="Скачать отчет в Excel"
           >
             <Download size={16} />
           </button>
@@ -462,7 +470,6 @@ export function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 2xl:gap-5">
-        {/* БЛОК БАЛАНСА */}
         <div
           className={`lg:col-span-2 ${cardCls} p-5 sm:p-6 2xl:p-8 relative overflow-hidden`}
         >
@@ -479,8 +486,6 @@ export function DashboardPage() {
               >
                 {t("totalBalance")}
               </span>
-
-              {/* ВЫПАДАЮЩЕЕ МЕНЮ ВАЛЮТ (заменили глаз) */}
               <div className="relative">
                 <button
                   onClick={() => setIsCurrencyMenuOpen(!isCurrencyMenuOpen)}
@@ -497,7 +502,6 @@ export function DashboardPage() {
 
                 {isCurrencyMenuOpen && (
                   <>
-                    {/* Невидимый слой на весь экран для закрытия по клику вне меню */}
                     <div
                       className="fixed inset-0 z-40"
                       onClick={() => setIsCurrencyMenuOpen(false)}
@@ -897,22 +901,13 @@ export function DashboardPage() {
                   tx={tx}
                   onDelete={handleDeleteTx}
                   formatCurrency={formatCurrency}
+                  translateCat={translateCat}
                 />
               ))}
             </div>
           )}
         </div>
       </div>
-
-      <div className="mt-4 2xl:mt-5">
-        <BudgetLimits />
-      </div>
-
-      <TransactionModal
-        isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
-        defaultType={modalType}
-      />
 
       <button
         onClick={() =>
