@@ -41,7 +41,6 @@ interface AppContextType {
   ) => Promise<{ success: boolean; error?: string }>;
   getBalance: () => number;
   getUserTransactions: () => Transaction[];
-  toggleTheme: () => void;
   setLanguage: (lang: string) => void;
   updateUser: (data: Partial<User>) => void;
 }
@@ -214,7 +213,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             0,
           ),
         getUserTransactions: () => transactions,
-        toggleTheme,
         setLanguage,
       }}
     >
