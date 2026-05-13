@@ -13,7 +13,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Search,
-  Trash2, // <-- Иконка корзины
+  Trash2,
+  Download, // <-- Добавили иконку скачивания
 } from "lucide-react";
 import {
   AreaChart,
@@ -33,7 +34,7 @@ import { useApp } from "../contexts/AppContext";
 import { useT } from "../i18n/translations";
 import { TransactionModal } from "../components/TransactionModal";
 import { format, subDays, startOfDay, isAfter } from "date-fns";
-import { toast } from "sonner"; // <-- Для красивых уведомлений
+import { toast } from "sonner";
 
 const COLORS = [
   "#8b5cf6",
@@ -84,13 +85,6 @@ const PieTip = ({ active, payload }: any) => {
   );
 };
 
-// ==========================================
-// КОМПОНЕНТ: Свайп для удаления
-// ==========================================
-
-// ==========================================
-// КОМПОНЕНТ: Свайп для удаления (ИСПРАВЛЕННЫЙ)
-// ==========================================
 const SwipeableTransaction = ({
   tx,
   onDelete,
@@ -139,7 +133,6 @@ const SwipeableTransaction = ({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* САМА ТРАНЗАКЦИЯ (строго 100% ширины) */}
         <div className="w-full flex-shrink-0 flex items-center gap-3 p-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-muted/40 transition-colors">
           <div
             className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${tx.type === "income" ? "bg-emerald-500/15" : "bg-rose-500/15"}`}
@@ -177,7 +170,6 @@ const SwipeableTransaction = ({
           </span>
         </div>
 
-        {/* КНОПКА УДАЛЕНИЯ (спрятана абсолютно за правым краем экрана) */}
         <div className="absolute left-full top-0 bottom-0 w-[80px] flex items-center justify-center">
           <button
             onClick={() => onDelete(tx.id)}
@@ -192,7 +184,6 @@ const SwipeableTransaction = ({
 };
 
 export function DashboardPage() {
-  // Добавили deleteTransaction из AppContext
   const {
     currentUser,
     getUserTransactions,
@@ -314,7 +305,6 @@ export function DashboardPage() {
     setModalOpen(true);
   };
 
-  // ФУНКЦИЯ УДАЛЕНИЯ
   const handleDeleteTx = async (id: string) => {
     try {
       if (deleteTransaction) {
@@ -328,10 +318,53 @@ export function DashboardPage() {
     }
   };
 
+  // ==========================================
+  // ФУНКЦИЯ ЭКСПОРТА В EXCEL (CSV)
+  // ==========================================
+  const handleExportExcel = () => {
+    if (all.length === 0) {
+      toast.error("Нет данных для экспорта");
+      return;
+    }
+
+    // Заголовки таблицы
+    const headers = ["Тип", "Категория", "Описание", "Сумма", "Дата"];
+
+    // Формируем строки из транзакций
+    const rows = all.map((tx) => [
+      tx.type === "income" ? "Доход" : "Расход",
+      `"${tx.category}"`, // Кавычки защищают от запятых внутри текста
+      `"${tx.reason || ""}"`,
+      tx.amount,
+      new Date(tx.date).toLocaleDateString(),
+    ]);
+
+    // Склеиваем с BOM (\uFEFF) для Excel
+    const csvContent =
+      "\uFEFF" +
+      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
+
+    // Создаем файл и вызываем скачивание
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute(
+      "download",
+      `Отчет_Финансы_${new Date().toISOString().split("T")[0]}.csv`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success("Отчет успешно скачан!");
+  };
+
   const cardCls = "liquid-glass rounded-2xl";
 
   return (
     <div className="p-4 lg:p-6 2xl:p-10 space-y-5 2xl:space-y-7 overflow-x-hidden">
+      {/* HEADER с кнопкой Экспорта */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1
@@ -364,21 +397,33 @@ export function DashboardPage() {
             )}
           </p>
         </div>
-        <div className="flex bg-white/30 dark:bg-muted rounded-xl p-1 gap-1 self-start sm:self-auto backdrop-blur-sm border border-white/40 dark:border-border">
-          {(["week", "month", "all"] as const).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`px-3 py-1.5 rounded-lg transition-all ${period === p ? "bg-white/70 dark:bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
-              style={{ fontSize: "0.78rem", fontWeight: 500 }}
-            >
-              {p === "week"
-                ? t("thisWeek")
-                : p === "month"
-                  ? t("thisMonth")
-                  : t("allTime")}
-            </button>
-          ))}
+
+        {/* Правый блок с фильтрами и кнопкой скачивания */}
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="flex bg-white/30 dark:bg-muted rounded-xl p-1 gap-1 backdrop-blur-sm border border-white/40 dark:border-border">
+            {(["week", "month", "all"] as const).map((p) => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`px-3 py-1.5 rounded-lg transition-all ${period === p ? "bg-white/70 dark:bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                style={{ fontSize: "0.78rem", fontWeight: 500 }}
+              >
+                {p === "week"
+                  ? t("thisWeek")
+                  : p === "month"
+                    ? t("thisMonth")
+                    : t("allTime")}
+              </button>
+            ))}
+          </div>
+          {/* Кнопка экспорта в Excel */}
+          <button
+            onClick={handleExportExcel}
+            className="p-2 h-full bg-purple-600/10 text-purple-600 dark:text-purple-400 rounded-xl hover:bg-purple-600/20 transition-all border border-purple-500/20 flex items-center justify-center shadow-sm active:scale-95"
+            title="Скачать отчет в Excel"
+          >
+            <Download size={18} />
+          </button>
         </div>
       </div>
 
@@ -732,7 +777,6 @@ export function DashboardPage() {
           </div>
         </div>
 
-        {/* БЛОК СО СПИСКОМ (ПОИСК И СВАЙП) */}
         <div className={`${cardCls} p-5 flex flex-col h-full`}>
           <div className="flex items-center justify-between mb-4 gap-3">
             <h3
