@@ -14,7 +14,7 @@ import {
   ArrowDownRight,
   Search,
   Trash2,
-  Download, // <-- Добавили иконку скачивания
+  Download,
 } from "lucide-react";
 import {
   AreaChart,
@@ -47,50 +47,21 @@ const COLORS = [
   "#fb7185",
 ];
 
-function fmt(n: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  }).format(n);
-}
+// Список доступных валют
+const CURRENCIES = ["USD", "EUR", "RUB", "KZT", "KGS", "UZS"] as const;
+type CurrencyType = (typeof CURRENCIES)[number];
 
-const ChartTip = ({ active, payload, label }: any) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div
-      className="liquid-glass dark:bg-popover px-3 py-2 rounded-xl shadow-xl border-0"
-      style={{ fontSize: "0.8rem" }}
-    >
-      <p className="text-muted-foreground mb-0.5">{label}</p>
-      {payload.map((e: any, i: number) => (
-        <p key={i} style={{ color: e.color, fontWeight: 600 }}>
-          {fmt(e.value)}
-        </p>
-      ))}
-    </div>
-  );
-};
-
-const PieTip = ({ active, payload }: any) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div
-      className="liquid-glass dark:bg-popover px-3 py-2 rounded-xl shadow-xl border-0"
-      style={{ fontSize: "0.8rem" }}
-    >
-      <p className="text-foreground font-semibold">{payload[0].name}</p>
-      <p style={{ color: payload[0].payload.fill }}>{fmt(payload[0].value)}</p>
-    </div>
-  );
-};
-
+// ==========================================
+// КОМПОНЕНТ: Свайп для удаления
+// ==========================================
 const SwipeableTransaction = ({
   tx,
   onDelete,
+  formatCurrency, // <-- передаем функцию форматирования
 }: {
   tx: any;
   onDelete: (id: string) => void;
+  formatCurrency: (n: number) => string;
 }) => {
   const [translateX, setTranslateX] = useState(0);
   const startXRef = useRef(0);
@@ -166,7 +137,7 @@ const SwipeableTransaction = ({
             style={{ fontSize: "0.88rem", fontWeight: 700 }}
           >
             {tx.type === "income" ? "+" : "-"}
-            {fmt(tx.amount)}
+            {formatCurrency(tx.amount)}
           </span>
         </div>
 
@@ -197,6 +168,92 @@ export function DashboardPage() {
   const [modalType, setModalType] = useState<"income" | "spending">("income");
   const [showBalance, setShowBalance] = useState(true);
   const [period, setPeriod] = useState<"week" | "month" | "all">("month");
+
+  // ==========================================
+  // ДИНАМИЧЕСКИЕ ВАЛЮТЫ И КУРСЫ
+  // ==========================================
+  const [currency, setCurrency] = useState<CurrencyType>(
+    () => (localStorage.getItem("app_currency") as CurrencyType) || "USD",
+  );
+  const [rates, setRates] = useState<Record<string, number>>({ USD: 1 });
+
+  // Сохраняем выбранную валюту и уведомляем приложение
+  useEffect(() => {
+    localStorage.setItem("app_currency", currency);
+    window.dispatchEvent(new Event("currencyChanged"));
+  }, [currency]);
+
+  // Загружаем актуальные курсы с бесплатного API (относительно USD)
+  useEffect(() => {
+    fetch("https://api.exchangerate-api.com/v4/latest/USD")
+      .then((res) => res.json())
+      .then((data) => {
+        setRates(data.rates);
+      })
+      .catch((err) => console.error("Ошибка загрузки курсов валют", err));
+  }, []);
+
+  // Умная функция форматирования с учетом курса
+  const formatCurrency = useCallback(
+    (n: number) => {
+      const locales: Record<CurrencyType, string> = {
+        USD: "en-US",
+        EUR: "de-DE",
+        RUB: "ru-RU",
+        KZT: "kk-KZ",
+        KGS: "ky-KG",
+        UZS: "uz-UZ",
+      };
+
+      // Умножаем на актуальный курс (если API еще грузится, умножит на 1)
+      const rate = rates[currency] || 1;
+      const convertedAmount = n * rate;
+
+      return new Intl.NumberFormat(locales[currency], {
+        style: "currency",
+        currency: currency,
+        // Убираем копейки для крупных валют, чтобы интерфейс не был перегружен
+        minimumFractionDigits: ["UZS", "KZT", "KGS"].includes(currency) ? 0 : 2,
+      }).format(convertedAmount);
+    },
+    [currency, rates],
+  );
+
+  // ==========================================
+  // ТУЛТИПЫ ДЛЯ ГРАФИКОВ (теперь они знают про валюту)
+  // ==========================================
+  const ChartTip = ({ active, payload, label }: any) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div
+        className="liquid-glass dark:bg-popover px-3 py-2 rounded-xl shadow-xl border-0"
+        style={{ fontSize: "0.8rem" }}
+      >
+        <p className="text-muted-foreground mb-0.5">{label}</p>
+        {payload.map((e: any, i: number) => (
+          <p key={i} style={{ color: e.color, fontWeight: 600 }}>
+            {formatCurrency(e.value)}
+          </p>
+        ))}
+      </div>
+    );
+  };
+
+  const PieTip = ({ active, payload }: any) => {
+    if (!active || !payload?.length) return null;
+    return (
+      <div
+        className="liquid-glass dark:bg-popover px-3 py-2 rounded-xl shadow-xl border-0"
+        style={{ fontSize: "0.8rem" }}
+      >
+        <p className="text-foreground font-semibold">{payload[0].name}</p>
+        <p style={{ color: payload[0].payload.fill }}>
+          {formatCurrency(payload[0].value)}
+        </p>
+      </div>
+    );
+  };
+
   const [searchQuery, setSearchQuery] = useState("");
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -269,7 +326,6 @@ export function DashboardPage() {
 
   const fetchAI = useCallback(async () => {
     if (all.length === 0) return;
-
     setAiLoading(true);
     try {
       const token = localStorage.getItem("access");
@@ -280,14 +336,9 @@ export function DashboardPage() {
           Authorization: `Bearer ${token}`,
         },
       });
-
       const data = await res.json();
-
-      if (res.ok && data.tip) {
-        setAiText(data.tip);
-      } else {
-        setAiText(data.error || "Ошибка получения совета.");
-      }
+      if (res.ok && data.tip) setAiText(data.tip);
+      else setAiText(data.error || "Ошибка получения совета.");
     } catch {
       setAiText("Нет связи с сервером AI.");
     }
@@ -295,9 +346,7 @@ export function DashboardPage() {
   }, [all.length]);
 
   useEffect(() => {
-    if (all.length > 0) {
-      fetchAI();
-    }
+    if (all.length > 0) fetchAI();
   }, [fetchAI, all.length]);
 
   const openModal = (type: "income" | "spending") => {
@@ -318,33 +367,30 @@ export function DashboardPage() {
     }
   };
 
-  // ==========================================
-  // ФУНКЦИЯ ЭКСПОРТА В EXCEL (CSV)
-  // ==========================================
   const handleExportExcel = () => {
     if (all.length === 0) {
       toast.error("Нет данных для экспорта");
       return;
     }
-
-    // Заголовки таблицы
-    const headers = ["Тип", "Категория", "Описание", "Сумма", "Дата"];
-
-    // Формируем строки из транзакций
+    const headers = [
+      "Тип",
+      "Категория",
+      "Описание",
+      "Сумма (Оригинал)",
+      "Валюта отображения",
+      "Дата",
+    ];
     const rows = all.map((tx) => [
       tx.type === "income" ? "Доход" : "Расход",
-      `"${tx.category}"`, // Кавычки защищают от запятых внутри текста
+      `"${tx.category}"`,
       `"${tx.reason || ""}"`,
       tx.amount,
+      currency,
       new Date(tx.date).toLocaleDateString(),
     ]);
-
-    // Склеиваем с BOM (\uFEFF) для Excel
     const csvContent =
       "\uFEFF" +
       [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-
-    // Создаем файл и вызываем скачивание
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -356,7 +402,6 @@ export function DashboardPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-
     toast.success("Отчет успешно скачан!");
   };
 
@@ -364,8 +409,7 @@ export function DashboardPage() {
 
   return (
     <div className="p-4 lg:p-6 2xl:p-10 space-y-5 2xl:space-y-7 overflow-x-hidden">
-      {/* HEADER с кнопкой Экспорта */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
         <div>
           <h1
             className="text-foreground"
@@ -398,8 +442,9 @@ export function DashboardPage() {
           </p>
         </div>
 
-        {/* Правый блок с фильтрами и кнопкой скачивания */}
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        {/* Навигация фильтров и валют */}
+        <div className="flex flex-wrap items-center gap-2 self-start xl:self-auto">
+          {/* Периоды */}
           <div className="flex bg-white/30 dark:bg-muted rounded-xl p-1 gap-1 backdrop-blur-sm border border-white/40 dark:border-border">
             {(["week", "month", "all"] as const).map((p) => (
               <button
@@ -416,13 +461,27 @@ export function DashboardPage() {
               </button>
             ))}
           </div>
-          {/* Кнопка экспорта в Excel */}
+
+          {/* Переключатель валют */}
+          <div className="flex flex-wrap bg-white/30 dark:bg-muted rounded-xl p-1 gap-1 backdrop-blur-sm border border-white/40 dark:border-border">
+            {CURRENCIES.map((c) => (
+              <button
+                key={c}
+                onClick={() => setCurrency(c)}
+                className={`px-2.5 py-1.5 rounded-lg transition-all ${currency === c ? "bg-purple-600 text-white shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-white/40 dark:hover:bg-white/10"}`}
+                style={{ fontSize: "0.75rem", fontWeight: 600 }}
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+
           <button
             onClick={handleExportExcel}
-            className="p-2 h-full bg-purple-600/10 text-purple-600 dark:text-purple-400 rounded-xl hover:bg-purple-600/20 transition-all border border-purple-500/20 flex items-center justify-center shadow-sm active:scale-95"
+            className="p-2 h-[34px] w-[34px] bg-purple-600/10 text-purple-600 dark:text-purple-400 rounded-xl hover:bg-purple-600/20 transition-all border border-purple-500/20 flex items-center justify-center shadow-sm active:scale-95"
             title="Скачать отчет в Excel"
           >
-            <Download size={18} />
+            <Download size={16} />
           </button>
         </div>
       </div>
@@ -448,7 +507,7 @@ export function DashboardPage() {
                 onClick={() => setShowBalance(!showBalance)}
                 className="text-muted-foreground hover:text-foreground transition-colors p-1"
               >
-                {showBalance ? <Eye size={15} /> : <EyeOff size={15} />}
+                <Eye size={15} />
               </button>
             </div>
             <div
@@ -460,7 +519,7 @@ export function DashboardPage() {
                 lineHeight: 1,
               }}
             >
-              {showBalance ? fmt(balance) : "••••••"}
+              {showBalance ? formatCurrency(balance) : "••••••"}
             </div>
             <div
               className={`flex items-center gap-1 mt-2.5 ${totalIncome >= totalSpending ? "text-emerald-500" : "text-rose-500"}`}
@@ -472,7 +531,7 @@ export function DashboardPage() {
                 <ArrowDownRight size={15} />
               )}
               <span>
-                {fmt(Math.abs(totalIncome - totalSpending))}{" "}
+                {formatCurrency(Math.abs(totalIncome - totalSpending))}{" "}
                 {period === "week" ? t("thisWeek") : t("thisMonth")}
               </span>
             </div>
@@ -531,7 +590,7 @@ export function DashboardPage() {
                   letterSpacing: "-0.02em",
                 }}
               >
-                {showBalance ? fmt(totalIncome) : "••••"}
+                {showBalance ? formatCurrency(totalIncome) : "••••"}
               </p>
             </div>
           </div>
@@ -558,7 +617,7 @@ export function DashboardPage() {
                   letterSpacing: "-0.02em",
                 }}
               >
-                {showBalance ? fmt(totalSpending) : "••••"}
+                {showBalance ? formatCurrency(totalSpending) : "••••"}
               </p>
             </div>
           </div>
@@ -655,7 +714,7 @@ export function DashboardPage() {
                       className="text-foreground flex-shrink-0"
                       style={{ fontSize: "0.78rem", fontWeight: 600 }}
                     >
-                      {fmt(item.value)}
+                      {formatCurrency(item.value)}
                     </span>
                   </div>
                 ))}
@@ -743,7 +802,6 @@ export function DashboardPage() {
               </button>
             )}
           </div>
-
           <div className="relative z-10">
             {all.length === 0 ? (
               <p
@@ -785,7 +843,6 @@ export function DashboardPage() {
             >
               {t("recentTransactions")}
             </h3>
-
             <div className="relative flex-1 max-w-[200px]">
               <Search
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
@@ -800,7 +857,6 @@ export function DashboardPage() {
               />
             </div>
           </div>
-
           {recent.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 gap-2">
               <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-muted flex items-center justify-center">
@@ -820,6 +876,7 @@ export function DashboardPage() {
                   key={tx.id}
                   tx={tx}
                   onDelete={handleDeleteTx}
+                  formatCurrency={formatCurrency}
                 />
               ))}
             </div>
@@ -841,11 +898,7 @@ export function DashboardPage() {
         onClick={() =>
           modalOpen ? setModalOpen(false) : openModal("spending")
         }
-        className={`md:hidden fixed bottom-24 right-6 w-14 h-14 rounded-full flex items-center justify-center z-[60] active:scale-90 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] backdrop-blur-xl border shadow-xl ${
-          modalOpen
-            ? "bg-rose-500/30 border-rose-500/30 shadow-rose-500/20 text-rose-100 rotate-[135deg]"
-            : "bg-purple-500/30 border-purple-400/30 shadow-purple-500/20 text-white rotate-0 hover:bg-purple-500/40"
-        }`}
+        className={`md:hidden fixed bottom-24 right-6 w-14 h-14 rounded-full flex items-center justify-center z-[60] active:scale-90 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] backdrop-blur-xl border shadow-xl ${modalOpen ? "bg-rose-500/30 border-rose-500/30 shadow-rose-500/20 text-rose-100 rotate-[135deg]" : "bg-purple-500/30 border-purple-400/30 shadow-purple-500/20 text-white rotate-0 hover:bg-purple-500/40"}`}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
