@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useApp } from "../contexts/AppContext";
 import { useT } from "../i18n/translations";
 import { Settings2, Plus, Trash2, Check, X } from "lucide-react";
 
-// Дефолтные лимиты (загрузятся, если пользователь зашел впервые)
+// Дефолтные лимиты сохраняются в базовой валюте (USD)
 const DEFAULT_BUDGETS: Record<string, number> = {
   Продукты: 500,
   Транспорт: 150,
@@ -13,38 +13,95 @@ const DEFAULT_BUDGETS: Record<string, number> = {
   Другое: 100,
 };
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: "$",
+  EUR: "€",
+  RUB: "₽",
+  KZT: "₸",
+  KGS: "сом",
+  UZS: "so'm",
+};
+
 export function BudgetLimits() {
   const { transactions, language } = useApp();
   const t = useT(language);
   const [animate, setAnimate] = useState(false);
 
-  // --- Состояние для сохранения бюджетов ---
+  // --- Состояние для сохранения бюджетов (в USD) ---
   const [budgets, setBudgets] = useState<Record<string, number>>(() => {
     const saved = localStorage.getItem("userBudgets");
     return saved ? JSON.parse(saved) : DEFAULT_BUDGETS;
   });
 
-  // --- Состояния режима редактирования ---
   const [isEditing, setIsEditing] = useState(false);
   const [editState, setEditState] = useState<Record<string, number>>({});
   const [newCatName, setNewCatName] = useState("");
   const [newCatLimit, setNewCatLimit] = useState("");
+
+  // ==========================================
+  // МУЛЬТИВАЛЮТНОСТЬ В ЛИМИТАХ
+  // ==========================================
+  const [currency, setCurrency] = useState(
+    () => localStorage.getItem("app_currency") || "USD",
+  );
+  const [rates, setRates] = useState<Record<string, number>>({ USD: 1 });
+
+  // Слушаем изменения валюты из шапки дашборда
+  useEffect(() => {
+    const handleCurrencyChange = () => {
+      setCurrency(localStorage.getItem("app_currency") || "USD");
+    };
+    window.addEventListener("currencyChanged", handleCurrencyChange);
+    return () =>
+      window.removeEventListener("currencyChanged", handleCurrencyChange);
+  }, []);
+
+  // Получаем свежий курс
+  useEffect(() => {
+    fetch("https://api.exchangerate-api.com/v4/latest/USD")
+      .then((res) => res.json())
+      .then((data) => setRates(data.rates))
+      .catch((err) => console.error("Ошибка загрузки курсов", err));
+  }, []);
+
+  const rate = rates[currency] || 1;
+
+  // Динамическая функция форматирования для карточек лимитов
+  const formatCurrency = useCallback(
+    (n: number) => {
+      const locales: Record<string, string> = {
+        USD: "en-US",
+        EUR: "de-DE",
+        RUB: "ru-RU",
+        KZT: "kk-KZ",
+        KGS: "ky-KG",
+        UZS: "uz-UZ",
+      };
+      const convertedAmount = n * rate;
+
+      return new Intl.NumberFormat(locales[currency] || "en-US", {
+        style: "currency",
+        currency: currency,
+        minimumFractionDigits: ["UZS", "KZT", "KGS"].includes(currency) ? 0 : 2,
+      }).format(convertedAmount);
+    },
+    [currency, rates, rate],
+  );
 
   // Сохраняем в память при каждом изменении
   useEffect(() => {
     localStorage.setItem("userBudgets", JSON.stringify(budgets));
   }, [budgets]);
 
-  // Перезапуск анимации при загрузке или выходе из режима редактирования
+  // Перезапуск анимации прогресс-баров
   useEffect(() => {
     if (!isEditing) {
       setAnimate(false);
       const timer = setTimeout(() => setAnimate(true), 150);
       return () => clearTimeout(timer);
     }
-  }, [isEditing, budgets]);
+  }, [isEditing, budgets, currency]); // Добавили currency в зависимости
 
-  // Фильтруем транзакции только за текущий месяц
   const currentMonth = new Date().getMonth();
   const currentYear = new Date().getFullYear();
 
@@ -56,10 +113,9 @@ export function BudgetLimits() {
     );
   });
 
-  // Считаем сумму трат по каждой категории
   const spentByCategory = spendingsThisMonth.reduce(
     (acc: Record<string, number>, tx: any) => {
-      acc[tx.category] = (acc[tx.category] || 0) + tx.amount;
+      acc[tx.category] = (acc[tx.category] || 0) + tx.amount; // Суммы tx.amount уже лежат в базе в USD
       return acc;
     },
     {},
@@ -70,7 +126,16 @@ export function BudgetLimits() {
   // ==========================================
   if (isEditing) {
     const handleSave = () => {
-      setBudgets(editState);
+      // Конвертируем введенные суммы обратно в USD для хранения в БД
+      const savedBudgetsInUSD = Object.entries(editState).reduce(
+        (acc, [cat, val]) => {
+          acc[cat] = val / rate;
+          return acc;
+        },
+        {} as Record<string, number>,
+      );
+
+      setBudgets(savedBudgetsInUSD);
       setIsEditing(false);
     };
 
@@ -108,7 +173,6 @@ export function BudgetLimits() {
           </button>
         </div>
 
-        {/* Список текущих категорий для изменения */}
         <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
           {Object.entries(editState).map(([cat, limit]) => (
             <div
@@ -119,7 +183,9 @@ export function BudgetLimits() {
                 {cat}
               </span>
               <div className="flex items-center gap-2">
-                <span className="text-gray-400 text-sm">$</span>
+                <span className="text-gray-400 text-sm font-bold">
+                  {CURRENCY_SYMBOLS[currency] || "$"}
+                </span>
                 <input
                   type="number"
                   value={limit}
@@ -129,7 +195,7 @@ export function BudgetLimits() {
                       [cat]: parseFloat(e.target.value) || 0,
                     }))
                   }
-                  className="w-20 bg-transparent border-b border-gray-300 dark:border-white/20 text-gray-900 dark:text-white text-right outline-none focus:border-purple-500 text-sm font-semibold transition-colors"
+                  className="w-24 bg-transparent border-b border-gray-300 dark:border-white/20 text-gray-900 dark:text-white text-right outline-none focus:border-purple-500 text-sm font-semibold transition-colors"
                 />
                 <button
                   onClick={() => handleRemove(cat)}
@@ -142,7 +208,6 @@ export function BudgetLimits() {
           ))}
         </div>
 
-        {/* Форма добавления новой категории */}
         <form
           onSubmit={handleAdd}
           className="mt-4 flex items-center gap-2 bg-black/5 dark:bg-white/5 p-3 rounded-2xl border border-dashed border-gray-300 dark:border-white/20 focus-within:border-purple-500/50 transition-colors"
@@ -152,19 +217,22 @@ export function BudgetLimits() {
             placeholder="Новая категория"
             value={newCatName}
             onChange={(e) => setNewCatName(e.target.value)}
-            className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-white placeholder-gray-500"
+            className="flex-1 bg-transparent outline-none text-sm text-gray-900 dark:text-white placeholder-gray-500 w-1/2"
           />
+          <span className="text-gray-400 text-sm font-bold flex-shrink-0">
+            {CURRENCY_SYMBOLS[currency] || "$"}
+          </span>
           <input
             type="number"
             placeholder="Сумма"
             value={newCatLimit}
             onChange={(e) => setNewCatLimit(e.target.value)}
-            className="w-16 bg-transparent border-b border-gray-300 dark:border-white/20 text-gray-900 dark:text-white text-right outline-none focus:border-purple-500 text-sm font-semibold transition-colors"
+            className="w-20 bg-transparent border-b border-gray-300 dark:border-white/20 text-gray-900 dark:text-white text-right outline-none focus:border-purple-500 text-sm font-semibold transition-colors flex-shrink-0"
           />
           <button
             type="submit"
             disabled={!newCatName.trim() || !newCatLimit}
-            className="p-2 bg-purple-500/20 text-purple-600 dark:text-purple-400 rounded-xl disabled:opacity-40 hover:bg-purple-500/30 transition-colors"
+            className="p-2 bg-purple-500/20 text-purple-600 dark:text-purple-400 rounded-xl disabled:opacity-40 hover:bg-purple-500/30 transition-colors flex-shrink-0"
           >
             <Plus size={16} strokeWidth={3} />
           </button>
@@ -187,7 +255,7 @@ export function BudgetLimits() {
     .map((category) => {
       const limit = budgets[category];
       const spent = spentByCategory[category] || 0;
-      const percentage = Math.min((spent / limit) * 100, 100);
+      const percentage = limit > 0 ? Math.min((spent / limit) * 100, 100) : 0;
 
       let colorClass = "bg-emerald-500 shadow-emerald-500/50";
       if (percentage > 85) colorClass = "bg-rose-500 shadow-rose-500/50";
@@ -208,7 +276,15 @@ export function BudgetLimits() {
         </h3>
         <button
           onClick={() => {
-            setEditState(budgets);
+            // Переводим лимиты из базового USD в текущую валюту для режима редактирования
+            const currentCurrencyState = Object.entries(budgets).reduce(
+              (acc, [cat, val]) => {
+                acc[cat] = parseFloat((val * rate).toFixed(2));
+                return acc;
+              },
+              {} as Record<string, number>,
+            );
+            setEditState(currentCurrencyState);
             setIsEditing(true);
           }}
           className="p-2 bg-white/50 dark:bg-white/5 rounded-xl text-gray-500 dark:text-gray-400 hover:text-purple-600 dark:hover:text-white transition-colors border border-gray-200 dark:border-white/5"
@@ -232,6 +308,8 @@ export function BudgetLimits() {
                 >
                   {item.category}
                 </span>
+
+                {/* ИСПОЛЬЗУЕМ formatCurrency ВМЕСТО ЖЕСТКОГО "$" */}
                 <span style={{ fontSize: "0.75rem" }} className="text-gray-500">
                   <span
                     className={
@@ -240,9 +318,9 @@ export function BudgetLimits() {
                         : "text-gray-900 dark:text-white font-semibold"
                     }
                   >
-                    ${item.spent.toFixed(2)}
+                    {formatCurrency(item.spent)}
                   </span>{" "}
-                  / ${item.limit}
+                  / {formatCurrency(item.limit)}
                 </span>
               </div>
               <div className="h-2.5 w-full bg-black/5 dark:bg-white/5 rounded-full overflow-hidden backdrop-blur-md border border-gray-200 dark:border-white/5">
