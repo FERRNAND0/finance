@@ -122,8 +122,9 @@ export function SettingsPage() {
         {t("settingsTitle") || "Настройки"}
       </h1>
 
-      {/* ── Profile ─────────────────────────────────── */}
-      <section className={cardCls}>
+      {/* ── Language ──────────────────────────────── */}
+      {/* Убрали overflow-hidden и добавили relative z-20, чтобы меню падало поверх Опасной зоны */}
+      <section className="liquid-glass rounded-2xl relative z-20">
         <div className={sectionHead}>
           <div className="flex items-center gap-2">
             <UserIcon size={15} className="text-primary" />
