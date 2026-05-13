@@ -87,6 +87,10 @@ const PieTip = ({ active, payload }: any) => {
 // ==========================================
 // КОМПОНЕНТ: Свайп для удаления
 // ==========================================
+
+// ==========================================
+// КОМПОНЕНТ: Свайп для удаления (ИСПРАВЛЕННЫЙ)
+// ==========================================
 const SwipeableTransaction = ({
   tx,
   onDelete,
@@ -124,11 +128,10 @@ const SwipeableTransaction = ({
   };
 
   return (
-    <div className="overflow-hidden rounded-xl mb-1">
+    <div className="overflow-hidden rounded-xl mb-1 touch-pan-y">
       <div
-        className="flex items-center transition-transform ease-out"
+        className="relative flex items-center transition-transform ease-out w-full"
         style={{
-          width: "calc(100% + 80px)",
           transform: `translateX(${translateX}px)`,
           transitionDuration: isDraggingRef.current ? "0s" : "0.3s",
         }}
@@ -136,6 +139,7 @@ const SwipeableTransaction = ({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
+        {/* САМА ТРАНЗАКЦИЯ (строго 100% ширины) */}
         <div className="w-full flex-shrink-0 flex items-center gap-3 p-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-muted/40 transition-colors">
           <div
             className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${tx.type === "income" ? "bg-emerald-500/15" : "bg-rose-500/15"}`}
@@ -173,12 +177,13 @@ const SwipeableTransaction = ({
           </span>
         </div>
 
-        <div className="w-[80px] flex-shrink-0 flex items-center justify-center">
+        {/* КНОПКА УДАЛЕНИЯ (спрятана абсолютно за правым краем экрана) */}
+        <div className="absolute left-full top-0 bottom-0 w-[80px] flex items-center justify-center">
           <button
             onClick={() => onDelete(tx.id)}
-            className="w-12 h-12 bg-rose-500/20 text-rose-500 border border-rose-500/30 rounded-xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all active:scale-90"
+            className="w-11 h-11 bg-rose-500/20 text-rose-500 border border-rose-500/30 rounded-xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all active:scale-90"
           >
-            <Trash2 size={20} />
+            <Trash2 size={18} />
           </button>
         </div>
       </div>
