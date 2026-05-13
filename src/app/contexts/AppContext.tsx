@@ -41,6 +41,7 @@ interface AppContextType {
   ) => Promise<{ success: boolean; error?: string }>;
   getBalance: () => number;
   getUserTransactions: () => Transaction[];
+  setTheme: (theme: string) => void;
   setLanguage: (lang: string) => void;
   updateUser: (data: Partial<User>) => void;
 }
@@ -59,9 +60,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [theme, setTheme] = useState(
-    localStorage.getItem("sf_theme") || "dark",
+
+  // ИСПРАВЛЕНИЕ 1: Меняем название функции на setThemeState
+  const [theme, setThemeState] = useState(
+    localStorage.getItem("app_theme") || "default",
   );
+
   const [language, setLang] = useState(
     localStorage.getItem("sf_language") || "ru",
   );
@@ -107,17 +111,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await fetchTransactions();
       }
       setLoading(false);
+
+      // Устанавливаем тему при первой загрузке приложения
+      const savedTheme = localStorage.getItem("app_theme") || "default";
+      setTheme(savedTheme);
     };
     init();
   }, []);
-
-  useEffect(() => {
-    if (theme === "dark") {
-      document.documentElement.classList.add("dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-    }
-  }, [theme]);
 
   const verifyCode = async (email: string, code: string) => {
     try {
@@ -178,14 +178,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setTransactions([]);
   };
 
-  const setThemeState = (newTheme: string) => {
+  // ИСПРАВЛЕНИЕ 2: Правильная функция setTheme без бесконечного цикла
+  const setTheme = (newTheme: string) => {
     setThemeState(newTheme);
     localStorage.setItem("app_theme", newTheme);
 
-    // Убираем старые классы и добавляем новый (например "theme-sea-green")
-    document.documentElement.className = "";
-    document.documentElement.classList.add(`theme-${newTheme}`);
+    const root = document.documentElement;
+    root.className = "";
+    root.classList.add(`theme-${newTheme}`);
+
+    // Для темных тем оставляем класс dark для белого текста Tailwind
+    if (newTheme !== "white" && newTheme !== "light") {
+      root.classList.add("dark");
+    }
   };
+
   const setLanguage = (l: string) => {
     setLang(l);
     localStorage.setItem("sf_language", l);
@@ -214,6 +221,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           ),
         getUserTransactions: () => transactions,
         setLanguage,
+        setTheme, // ИСПРАВЛЕНИЕ 3: Передаем setTheme в провайдер, чтобы кнопки работали!
       }}
     >
       {!loading && children}

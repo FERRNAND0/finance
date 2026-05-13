@@ -144,6 +144,7 @@ export function SettingsPage() {
       {/* ── Profile ─────────────────────────────────── */}
 
       {/* ── Appearance (Множественные темы) ──────────────────────────────── */}
+      {/* ── Appearance (Множественные темы со скроллом) ──────────────────────────────── */}
       <section className={cardCls}>
         <div className={sectionHead}>
           <div className="flex items-center gap-2">
@@ -157,12 +158,17 @@ export function SettingsPage() {
           </div>
         </div>
         <div className="p-5">
-          <div className="grid grid-cols-2 gap-3">
+          {/* Горизонтальный скролл */}
+          <div className="flex overflow-x-auto gap-3 pb-2 custom-scrollbar snap-x">
             {THEMES.map((item) => (
               <button
                 key={item.key}
                 onClick={() => setTheme && setTheme(item.key)}
-                className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${theme === item.key ? "border-primary bg-primary/10" : "border-transparent bg-black/5 dark:bg-white/5 hover:border-primary/40"}`}
+                className={`flex-shrink-0 snap-start flex items-center gap-3 p-3 rounded-xl border-2 transition-all w-[160px] sm:w-[180px] ${
+                  theme === item.key
+                    ? "border-primary bg-primary/10"
+                    : "border-transparent bg-black/5 dark:bg-white/5 hover:border-primary/40"
+                }`}
               >
                 <div
                   className="w-6 h-6 rounded-full border border-gray-200 dark:border-white/20 shadow-sm flex-shrink-0"
