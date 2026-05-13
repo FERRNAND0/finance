@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { ExpenseChart } from "../components/ExpenseChart";
+import { BudgetLimits } from "../components/BudgetLimits"; // Твои лимиты
 import {
   TrendingUp,
   TrendingDown,
@@ -11,6 +12,7 @@ import {
   RefreshCw,
   ArrowUpRight,
   ArrowDownRight,
+  Search, // <-- Добавили иконку лупы
 } from "lucide-react";
 import {
   AreaChart,
@@ -30,7 +32,6 @@ import { useApp } from "../contexts/AppContext";
 import { useT } from "../i18n/translations";
 import { TransactionModal } from "../components/TransactionModal";
 import { format, subDays, startOfDay, isAfter } from "date-fns";
-import { BudgetLimits } from "../components/BudgetLimits";
 
 const COLORS = [
   "#8b5cf6",
@@ -89,6 +90,10 @@ export function DashboardPage() {
   const [modalType, setModalType] = useState<"income" | "spending">("income");
   const [showBalance, setShowBalance] = useState(true);
   const [period, setPeriod] = useState<"week" | "month" | "all">("month");
+
+  // --- Состояние для умного поиска ---
+  const [searchQuery, setSearchQuery] = useState("");
+
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
@@ -143,14 +148,26 @@ export function DashboardPage() {
     .sort((a, b) => b.value - a.value)
     .slice(0, 8);
 
-  const recent = [...all]
+  // --- ЛОГИКА УМНОГО ПОИСКА ---
+  const displayTransactions = [...all]
+    .filter((tx) => {
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        (tx.reason || "").toLowerCase().includes(query) ||
+        (tx.category || "").toLowerCase().includes(query)
+      );
+    })
     .sort(
       (a, b) =>
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    )
-    .slice(0, 6);
+    );
 
-  /* AI */
+  // Если ищем что-то конкретное — показываем до 20 результатов. Если нет — только 6 последних.
+  const recent = searchQuery.trim()
+    ? displayTransactions.slice(0, 20)
+    : displayTransactions.slice(0, 6);
+
   /* AI Request to Django Backend */
   const fetchAI = useCallback(async () => {
     if (all.length === 0) return;
@@ -177,9 +194,8 @@ export function DashboardPage() {
       setAiText("Нет связи с сервером AI.");
     }
     setAiLoading(false);
-  }, [all.length]); // Следим только за изменением количества транзакций
+  }, [all.length]);
 
-  // Единый и чистый useEffect для вызова AI
   useEffect(() => {
     if (all.length > 0) {
       fetchAI();
@@ -331,7 +347,6 @@ export function DashboardPage() {
 
         {/* Right column */}
         <div className="flex flex-col gap-4">
-          {/* Income / Spending mini cards */}
           <div className={`${cardCls} p-4 flex items-center gap-3`}>
             <div className="w-10 h-10 rounded-xl bg-income/12 flex items-center justify-center flex-shrink-0">
               <TrendingUp size={18} className="text-income" />
@@ -389,7 +404,6 @@ export function DashboardPage() {
           <div className="mt-6">
             <ExpenseChart />
           </div>
-          {/* Quick actions */}
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => openModal("income")}
@@ -425,7 +439,6 @@ export function DashboardPage() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 2xl:gap-5">
-        {/* Spending pie */}
         <div className={`${cardCls} p-5`}>
           <h3
             className="text-foreground mb-4"
@@ -491,7 +504,6 @@ export function DashboardPage() {
           )}
         </div>
 
-        {/* Income bar */}
         <div className={`${cardCls} p-5`}>
           <h3
             className="text-foreground mb-4"
@@ -542,12 +554,9 @@ export function DashboardPage() {
           )}
         </div>
       </div>
-      <div className="mt-4 2xl:mt-5">
-        <BudgetLimits />
-      </div>
+
       {/* AI + Recent */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 2xl:gap-5">
-        {/* AI card */}
         <div className={`${cardCls} p-5 relative overflow-hidden`}>
           <div className="absolute top-0 right-0 w-36 h-36 rounded-full bg-primary/8 blur-3xl pointer-events-none" />
           <div className="flex items-center justify-between mb-4 relative z-10">
@@ -562,7 +571,6 @@ export function DashboardPage() {
                 {t("aiRecommendation")}
               </h3>
             </div>
-            {/* Кнопка обновления появляется, если есть хоть 1 транзакция */}
             {all.length > 0 && (
               <button
                 onClick={fetchAI}
@@ -609,32 +617,51 @@ export function DashboardPage() {
             )}
           </div>
         </div>
-        {/* Recent transactions */}
-        <div className={`${cardCls} p-5`}>
-          <h3
-            className="text-foreground mb-4"
-            style={{ fontSize: "0.95rem", fontWeight: 600 }}
-          >
-            {t("recentTransactions")}
-          </h3>
+
+        {/* ВАЖНО: Обновленный блок с поиском (Live Search) */}
+        <div className={`${cardCls} p-5 flex flex-col h-full`}>
+          <div className="flex items-center justify-between mb-4 gap-3">
+            <h3
+              className="text-foreground whitespace-nowrap"
+              style={{ fontSize: "0.95rem", fontWeight: 600 }}
+            >
+              {t("recentTransactions")}
+            </h3>
+
+            {/* Стеклянный инпут для поиска */}
+            <div className="relative flex-1 max-w-[200px]">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                size={14}
+              />
+              <input
+                type="text"
+                placeholder="Поиск..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl py-1.5 pl-9 pr-3 text-sm text-foreground outline-none focus:border-purple-500/50 transition-all placeholder:text-muted-foreground focus:bg-black/10 dark:focus:bg-black/20"
+              />
+            </div>
+          </div>
+
           {recent.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-8 gap-2">
-              <div className="w-10 h-10 rounded-full bg-white/30 dark:bg-muted flex items-center justify-center">
-                <TrendingUp size={17} className="text-muted-foreground" />
+              <div className="w-10 h-10 rounded-full bg-black/5 dark:bg-muted flex items-center justify-center">
+                <Search size={17} className="text-muted-foreground" />
               </div>
               <p
                 className="text-muted-foreground"
                 style={{ fontSize: "0.85rem" }}
               >
-                {t("noTransactions")}
+                {searchQuery ? "Ничего не найдено" : t("noTransactions")}
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="space-y-2 overflow-y-auto max-h-[300px] pr-1 custom-scrollbar">
               {recent.map((tx) => (
                 <div
                   key={tx.id}
-                  className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-white/20 dark:hover:bg-muted/40 transition-colors"
+                  className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-muted/40 transition-colors"
                 >
                   <div
                     className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${tx.type === "income" ? "bg-income/12" : "bg-spending/12"}`}
@@ -656,7 +683,9 @@ export function DashboardPage() {
                       className="text-muted-foreground flex gap-2"
                       style={{ fontSize: "0.72rem" }}
                     >
-                      <span className="text-purple-400">{tx.category}</span>
+                      <span className="text-purple-500 dark:text-purple-400">
+                        {tx.category}
+                      </span>
                       <span>•</span>
                       <span>{new Date(tx.date).toLocaleDateString()}</span>
                     </p>
@@ -675,13 +704,16 @@ export function DashboardPage() {
         </div>
       </div>
 
+      <div className="mt-4 2xl:mt-5">
+        <BudgetLimits />
+      </div>
+
       <TransactionModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         defaultType={modalType}
       />
-      {/* Плавающая кнопка добавления (FAB) - видна только на мобильных (md:hidden) */}
-      {/* Плавающая кнопка добавления (FAB) - видна только на мобильных (md:hidden) */}
+
       {/* Плавающая кнопка (FAB) - Сверхплавная анимация (iOS style) */}
       <button
         onClick={() =>
