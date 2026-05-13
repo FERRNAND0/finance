@@ -15,12 +15,6 @@ import { useApp } from "../contexts/AppContext";
 import { useT } from "../i18n/translations";
 import { toast } from "sonner";
 
-const LANGS = [
-  { code: "en", label: "English", flag: "🇺🇸" },
-  { code: "ru", label: "Русский", flag: "🇷🇺" },
-  { code: "uzb", label: "O'zbek", flag: "🇺🇿" },
-];
-
 export function SettingsPage() {
   const {
     currentUser,
@@ -50,7 +44,7 @@ export function SettingsPage() {
 
   const handleUpdateProfile = async () => {
     if (!editFirstName.trim() || !editLastName.trim() || !editEmail.trim()) {
-      toast.error("Имя, Фамилия и Email обязательны");
+      toast.error(t("fillAllFields") || "Имя, Фамилия и Email обязательны");
       return;
     }
 
@@ -74,15 +68,14 @@ export function SettingsPage() {
       const data = await res.json();
 
       if (res.ok) {
-        // Синхронизируем React с новыми данными от Django
         updateUser({
           firstName: data.first_name,
           lastName: data.last_name,
           email: data.email,
         });
-        toast.success("Профиль успешно обновлен!");
+        toast.success(t("settingsSaved") || "Профиль успешно обновлен!");
         setIsEditingProfile(false);
-        setEditPassword(""); // Очищаем поле пароля после сохранения
+        setEditPassword("");
       } else {
         toast.error(data.error || "Ошибка при обновлении профиля");
       }
@@ -92,9 +85,11 @@ export function SettingsPage() {
       setIsSaving(false);
     }
   };
+
   const fInit = currentUser?.firstName?.[0] || "";
   const lInit = currentUser?.lastName?.[0] || "";
   const initials = (fInit + lInit).toUpperCase() || "SF";
+
   const cardCls = "liquid-glass rounded-2xl overflow-hidden";
   const sectionHead =
     "px-5 py-3.5 border-b border-white/20 dark:border-border flex items-center justify-between";
@@ -126,7 +121,7 @@ export function SettingsPage() {
               className="text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
               style={{ fontSize: "0.75rem", fontWeight: 600 }}
             >
-              <Edit2 size={12} /> Изменить
+              <Edit2 size={12} /> {t("edit") || "Изменить"}
             </button>
           ) : (
             <button
@@ -175,7 +170,7 @@ export function SettingsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">
-                    Имя
+                    {t("firstName") || "Имя"}
                   </label>
                   <input
                     type="text"
@@ -186,7 +181,7 @@ export function SettingsPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">
-                    Фамилия
+                    {t("lastName") || "Фамилия"}
                   </label>
                   <input
                     type="text"
@@ -199,7 +194,7 @@ export function SettingsPage() {
 
               <div className="space-y-1">
                 <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">
-                  Email (Почта)
+                  {t("emailLabel") || "Email"}
                 </label>
                 <input
                   type="email"
@@ -211,8 +206,9 @@ export function SettingsPage() {
 
               <div className="space-y-1 pt-2 border-t border-white/10">
                 <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1 flex items-center gap-1">
-                  <Lock size={10} /> Новый пароль (оставьте пустым, если не
-                  хотите менять)
+                  <Lock size={10} />{" "}
+                  {t("newPassword") ||
+                    "Новый пароль (оставьте пустым, если не меняете)"}
                 </label>
                 <input
                   type="password"
@@ -229,10 +225,11 @@ export function SettingsPage() {
                 className="w-full py-2.5 mt-2 rounded-xl bg-primary text-white font-bold hover:bg-primary/90 disabled:opacity-50 transition-all flex items-center justify-center gap-2 text-sm shadow-lg shadow-primary/20"
               >
                 {isSaving ? (
-                  "Сохранение..."
+                  t("saving") || "Сохранение..."
                 ) : (
                   <>
-                    <Save size={16} /> Сохранить изменения
+                    <Save size={16} />{" "}
+                    {t("saveSettings") || "Сохранить изменения"}
                   </>
                 )}
               </button>
@@ -254,15 +251,23 @@ export function SettingsPage() {
               className="text-foreground"
               style={{ fontSize: "0.9rem", fontWeight: 600 }}
             >
-              {t("appearanceSection")}
+              {t("appearanceSection") || "Внешний вид"}
             </h2>
           </div>
         </div>
         <div className="p-5 space-y-4">
           <div className="grid grid-cols-2 gap-3">
             {[
-              { key: "dark", color: "#0b000b", label: "Dark" },
-              { key: "light", color: "#dfe3f2", label: "Light" },
+              {
+                key: "dark",
+                color: "#0b000b",
+                label: t("darkMode") || "Dark Mode",
+              },
+              {
+                key: "light",
+                color: "#dfe3f2",
+                label: t("lightMode") || "Light Mode",
+              },
             ].map((item) => (
               <button
                 key={item.key}
@@ -290,39 +295,47 @@ export function SettingsPage() {
           </div>
         </div>
       </section>
-      {/* Секция Язык */}
-      <div className="space-y-4">
-        <h3 className="text-gray-900 dark:text-white font-semibold text-lg flex items-center gap-2">
-          <span className="w-8 h-8 rounded-xl bg-blue-500/10 text-blue-500 flex items-center justify-center">
-            🌐
-          </span>
-          {t("languageSection")}
-        </h3>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {[
-            { code: "en", label: t("lang_en") },
-            { code: "ru", label: t("lang_ru") },
-            { code: "uzb", label: t("lang_uzb") },
-            { code: "kk", label: t("lang_kk") },
-            { code: "ky", label: t("lang_ky") },
-            { code: "de", label: t("lang_de") },
-            { code: "lb", label: t("lang_lb") },
-          ].map((lang) => (
-            <button
-              key={lang.code}
-              onClick={() => setLanguage(lang.code)}
-              className={`px-4 py-3 rounded-2xl text-sm font-semibold transition-all border ${
-                language === lang.code
-                  ? "bg-purple-500/15 border-purple-500/50 text-purple-600 dark:text-purple-400 shadow-sm"
-                  : "bg-black/5 dark:bg-white/5 border-transparent text-gray-500 dark:text-gray-400 hover:bg-black/10 dark:hover:bg-white/10"
-              }`}
+      {/* ── Language ──────────────────────────────── */}
+      <section className={cardCls}>
+        <div className={sectionHead}>
+          <div className="flex items-center gap-2">
+            <Globe size={15} className="text-primary" />
+            <h2
+              className="text-foreground"
+              style={{ fontSize: "0.9rem", fontWeight: 600 }}
             >
-              {lang.label}
-            </button>
-          ))}
+              {t("languageSection") || "Язык"}
+            </h2>
+          </div>
         </div>
-      </div>
+        <div className="p-5">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {[
+              { code: "en", label: t("lang_en") || "English" },
+              { code: "ru", label: t("lang_ru") || "Русский" },
+              { code: "uzb", label: t("lang_uzb") || "O'zbek" },
+              { code: "kk", label: t("lang_kk") || "Қазақша" },
+              { code: "ky", label: t("lang_ky") || "Кыргызча" },
+              { code: "de", label: t("lang_de") || "Deutsch" },
+              { code: "lb", label: t("lang_lb") || "Lëtzebuergesch" },
+            ].map((lang) => (
+              <button
+                key={lang.code}
+                onClick={() => setLanguage(lang.code)}
+                className={`px-4 py-3 rounded-2xl text-sm font-semibold transition-all border ${
+                  language === lang.code
+                    ? "bg-primary/15 border-primary/50 text-primary shadow-sm"
+                    : "bg-black/5 dark:bg-white/5 border-transparent text-gray-500 dark:text-gray-400 hover:bg-black/10 dark:hover:bg-white/10"
+                }`}
+              >
+                {lang.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ── Danger Zone ──────────────────────────── */}
       <div className="mt-8 liquid-glass rounded-3xl p-6 sm:p-8 border border-red-500/20 bg-red-500/5">
         <div className="flex items-center gap-3 mb-4">
@@ -330,16 +343,18 @@ export function SettingsPage() {
             <Trash2 className="text-red-500" size={20} />
           </div>
           <div>
-            <h3 className="text-red-500 font-bold text-lg">Опасная зона</h3>
+            <h3 className="text-red-500 font-bold text-lg">
+              {t("dangerZone") || "Опасная зона"}
+            </h3>
             <p className="text-gray-400 text-sm">
-              Сброс всех финансовых данных
+              {t("resetData") || "Сброс всех финансовых данных"}
             </p>
           </div>
         </div>
 
         <p className="text-gray-300 text-sm mb-6">
-          Это действие навсегда удалит все ваши доходы и расходы. Восстановить
-          их будет невозможно.
+          {t("resetWarning") ||
+            "Это действие навсегда удалит все ваши доходы и расходы. Восстановить их будет невозможно."}
         </p>
 
         {!showDanger ? (
@@ -347,19 +362,19 @@ export function SettingsPage() {
             onClick={() => setShowDanger(true)}
             className="px-6 py-3 rounded-xl bg-red-500/10 text-red-500 font-bold border border-red-500/30 hover:bg-red-500 hover:text-white transition-all shadow-lg shadow-red-500/10"
           >
-            Сбросить все транзакции
+            {t("resetBtn") || "Сбросить все транзакции"}
           </button>
         ) : (
           <div className="space-y-3 animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="space-y-1.5">
               <label className="text-red-400 text-[10px] uppercase tracking-widest ml-1">
-                Введите пароль для подтверждения
+                {t("enterPassword") || "Введите пароль для подтверждения"}
               </label>
               <input
                 type="password"
                 value={dangerPassword}
                 onChange={(e) => setDangerPassword(e.target.value)}
-                placeholder="Ваш текущий пароль"
+                placeholder={t("yourPassword") || "Ваш текущий пароль"}
                 className="w-full px-4 py-3 rounded-2xl bg-black/40 border border-red-500/30 text-white focus:ring-2 focus:ring-red-500/50 outline-none transition-all"
               />
             </div>
@@ -367,13 +382,15 @@ export function SettingsPage() {
               <button
                 onClick={async () => {
                   if (!dangerPassword) {
-                    toast.error("Введите пароль");
+                    toast.error(t("passwordRequired") || "Введите пароль");
                     return;
                   }
                   setIsDeleting(true);
                   const res = await deleteAllTransactions(dangerPassword);
                   if (res.success) {
-                    toast.success("Все данные успешно удалены");
+                    toast.success(
+                      t("transactionDeleted") || "Все данные успешно удалены",
+                    );
                     setShowDanger(false);
                     setDangerPassword("");
                   } else {
@@ -384,7 +401,9 @@ export function SettingsPage() {
                 disabled={isDeleting}
                 className="flex-1 py-3 rounded-xl bg-red-600 text-white font-bold hover:bg-red-500 disabled:opacity-50 transition-all flex items-center justify-center"
               >
-                {isDeleting ? "Удаление..." : "Подтвердить удаление"}
+                {isDeleting
+                  ? t("deleting") || "Удаление..."
+                  : t("confirmDelete") || "Подтвердить удаление"}
               </button>
               <button
                 onClick={() => {
@@ -393,7 +412,7 @@ export function SettingsPage() {
                 }}
                 className="flex-1 py-3 rounded-xl bg-white/5 text-gray-300 font-bold hover:bg-white/10 transition-all"
               >
-                Отмена
+                {t("cancel") || "Отмена"}
               </button>
             </div>
           </div>

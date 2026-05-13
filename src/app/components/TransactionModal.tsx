@@ -319,14 +319,17 @@ export function TransactionModal({
             <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">
               {t("date") || "Дата"}
             </label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500/50 outline-none transition-all dark:[color-scheme:dark]"
-            />
-          </div>
 
+            {/* Умная обертка для фикса бага с отступами на iOS Safari */}
+            <div className="w-full px-4 py-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 focus-within:border-purple-500/50 focus-within:ring-2 focus-within:ring-purple-500/50 transition-all flex items-center min-h-[50px]">
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="w-full bg-transparent text-gray-900 dark:text-white outline-none dark:[color-scheme:dark] appearance-none block"
+              />
+            </div>
+          </div>
           <button
             type="submit"
             disabled={loading}

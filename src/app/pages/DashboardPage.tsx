@@ -34,6 +34,7 @@ import { useT } from "../i18n/translations";
 import { TransactionModal } from "../components/TransactionModal";
 import { format, subDays, startOfDay, isAfter } from "date-fns";
 import { toast } from "sonner";
+import { PiggyBank } from "../components/PiggyBank";
 
 const COLORS = [
   "#8b5cf6",
@@ -666,7 +667,16 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
+      <div className="mt-4 2xl:mt-5 grid grid-cols-1 xl:grid-cols-2 gap-4 2xl:gap-5">
+        <BudgetLimits />
+        <PiggyBank />
+      </div>
 
+      <TransactionModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        defaultType={modalType}
+      />
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 2xl:gap-5">
         <div className={`${cardCls} p-5`}>
           <h3
