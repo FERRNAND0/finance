@@ -13,7 +13,6 @@ const INCOME_CATEGORIES = [
   "Другое",
 ];
 
-// Дефолтный список (если пользователь еще не настраивал лимиты)
 const DEFAULT_SPENDING_CATEGORIES = [
   "Продукты",
   "Транспорт",
@@ -23,6 +22,16 @@ const DEFAULT_SPENDING_CATEGORIES = [
   "Одежда",
   "Другое",
 ];
+
+// Символы валют для красивого отображения в поле ввода
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: "$",
+  EUR: "€",
+  RUB: "₽",
+  KZT: "₸",
+  KGS: "сом",
+  UZS: "so'm",
+};
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -44,15 +53,17 @@ export function TransactionModal({
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [loading, setLoading] = useState(false);
 
-  // Динамические категории расходов (синхронизируются с лимитами)
   const [spendingCategories, setSpendingCategories] = useState<string[]>(
     DEFAULT_SPENDING_CATEGORIES,
   );
   const [category, setCategory] = useState("");
 
-  // Состояния для добавления кастомной категории прямо из модалки
   const [isCustomCategory, setIsCustomCategory] = useState(false);
   const [customCategoryName, setCustomCategoryName] = useState("");
+
+  // === НОВЫЕ СОСТОЯНИЯ ДЛЯ МУЛЬТИВАЛЮТНОСТИ ===
+  const [currency, setCurrency] = useState("USD");
+  const [rate, setRate] = useState(1);
 
   useEffect(() => {
     if (isOpen) {
@@ -63,7 +74,21 @@ export function TransactionModal({
       setIsCustomCategory(false);
       setCustomCategoryName("");
 
-      // Читаем категории расходов из настроек бюджетов (localStorage)
+      // 1. Узнаем, какая валюта выбрана в дашборде
+      const savedCurrency = localStorage.getItem("app_currency") || "USD";
+      setCurrency(savedCurrency);
+
+      // 2. Скачиваем свежий курс, чтобы корректно перевести сумму в USD для базы данных
+      fetch("https://api.exchangerate-api.com/v4/latest/USD")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data && data.rates && data.rates[savedCurrency]) {
+            setRate(data.rates[savedCurrency]);
+          }
+        })
+        .catch((err) => console.error("Ошибка загрузки курса в модалке:", err));
+
+      // Восстанавливаем кастомные категории
       const savedBudgets = localStorage.getItem("userBudgets");
       let currentSpendingCats = DEFAULT_SPENDING_CATEGORIES;
       if (savedBudgets) {
@@ -73,13 +98,10 @@ export function TransactionModal({
           if (keys.length > 0) {
             currentSpendingCats = keys;
           }
-        } catch (e) {
-          console.error("Ошибка парсинга бюджетов", e);
-        }
+        } catch (e) {}
       }
       setSpendingCategories(currentSpendingCats);
 
-      // Устанавливаем категорию по умолчанию
       if (defaultType === "income") {
         setCategory(INCOME_CATEGORIES[0]);
       } else {
@@ -93,7 +115,6 @@ export function TransactionModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Определяем финальную категорию
     const finalCategory = isCustomCategory
       ? customCategoryName.trim()
       : category;
@@ -103,22 +124,26 @@ export function TransactionModal({
       return;
     }
 
+    // === КОНВЕРТАЦИЯ В БАЗОВУЮ ВАЛЮТУ (USD) ПЕРЕД ОТПРАВКОЙ ===
+    // Пользователь вводит сумму в своей валюте, а в БД мы сохраняем чистый доллар
+    const amountNum = parseFloat(amount);
+    const amountInUSD = amountNum / rate;
+
     setLoading(true);
     try {
       await addTransaction({
         type,
-        amount: parseFloat(amount),
+        amount: amountInUSD, // <-- Передаем конвертированную сумму!
         category: finalCategory,
         reason,
         date,
       });
 
-      // МАГИЯ: Если это новая кастомная категория расхода, добавляем её в карточку лимитов
       if (type === "spending" && isCustomCategory) {
         const saved = localStorage.getItem("userBudgets");
         const budgets = saved ? JSON.parse(saved) : {};
         if (!budgets[finalCategory]) {
-          budgets[finalCategory] = 0; // Сохраняем с лимитом $0, чтобы она появилась в настройках
+          budgets[finalCategory] = 0;
           localStorage.setItem("userBudgets", JSON.stringify(budgets));
         }
       }
@@ -164,7 +189,6 @@ export function TransactionModal({
             {type === "income" ? t("addIncome") : t("addSpending")}
           </h2>
 
-          {/* Переключатель Доход / Расход */}
           <div className="flex p-1 bg-black/5 dark:bg-white/5 rounded-xl border border-gray-200 dark:border-white/10">
             <button
               type="button"
@@ -175,7 +199,7 @@ export function TransactionModal({
                   : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
               }`}
             >
-              {t("incomeTab") || "Доход"}
+              {t("incomeTab") || "Доходы"}
             </button>
             <button
               type="button"
@@ -186,26 +210,32 @@ export function TransactionModal({
                   : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
               }`}
             >
-              {t("spendingTab") || "Расход"}
+              {t("spendingTab") || "Расходы"}
             </button>
           </div>
 
-          {/* Поле: Сумма */}
+          {/* ПОЛЕ: СУММА (с динамической валютой) */}
           <div className="space-y-1.5">
-            <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">
-              {t("amount") || "Сумма"}
+            <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1 flex items-center justify-between">
+              <span>{t("amount") || "Сумма"}</span>
+              <span className="text-purple-500 font-bold">в {currency}</span>
             </label>
-            <input
-              type="number"
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0.00"
-              className="w-full px-4 py-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500/50 outline-none transition-all text-lg font-semibold"
-            />
+            <div className="relative">
+              {/* Символ валюты внутри инпута */}
+              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-bold text-lg pointer-events-none">
+                {CURRENCY_SYMBOLS[currency] || "$"}
+              </span>
+              <input
+                type="number"
+                step="0.01"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="0.00"
+                className="w-full pl-9 pr-4 py-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500/50 outline-none transition-all text-lg font-semibold"
+              />
+            </div>
           </div>
 
-          {/* Поле: Категория */}
           <div className="space-y-1.5">
             <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">
               Категория
@@ -235,7 +265,6 @@ export function TransactionModal({
                     {cat}
                   </option>
                 ))}
-                {/* Динамическая опция добавления своей категории */}
                 {type === "spending" && (
                   <option
                     value="ADD_CUSTOM"
@@ -246,7 +275,6 @@ export function TransactionModal({
                 )}
               </select>
             ) : (
-              // Поле ввода для новой кастомной категории
               <div className="flex gap-2">
                 <input
                   type="text"
@@ -267,7 +295,6 @@ export function TransactionModal({
             )}
           </div>
 
-          {/* Поле: Название / Описание */}
           <div className="space-y-1.5">
             <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">
               Название / Детали
@@ -285,7 +312,6 @@ export function TransactionModal({
             />
           </div>
 
-          {/* Поле: Дата */}
           <div className="space-y-1.5">
             <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">
               {t("date") || "Дата"}
