@@ -12,7 +12,9 @@ const INCOME_CATEGORIES = [
   "Перевод",
   "Другое",
 ];
-const SPENDING_CATEGORIES = [
+
+// Дефолтный список (если пользователь еще не настраивал лимиты)
+const DEFAULT_SPENDING_CATEGORIES = [
   "Продукты",
   "Транспорт",
   "Жилье",
@@ -38,24 +40,51 @@ export function TransactionModal({
 
   const [type, setType] = useState<"income" | "spending">(defaultType);
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState(
-    defaultType === "income" ? INCOME_CATEGORIES[0] : SPENDING_CATEGORIES[0],
-  );
   const [reason, setReason] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [loading, setLoading] = useState(false);
 
+  // Динамические категории расходов (синхронизируются с лимитами)
+  const [spendingCategories, setSpendingCategories] = useState<string[]>(
+    DEFAULT_SPENDING_CATEGORIES,
+  );
+  const [category, setCategory] = useState("");
+
+  // Состояния для добавления кастомной категории прямо из модалки
+  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  const [customCategoryName, setCustomCategoryName] = useState("");
+
   useEffect(() => {
     if (isOpen) {
       setType(defaultType);
-      setCategory(
-        defaultType === "income"
-          ? INCOME_CATEGORIES[0]
-          : SPENDING_CATEGORIES[0],
-      );
       setAmount("");
       setReason("");
       setDate(new Date().toISOString().split("T")[0]);
+      setIsCustomCategory(false);
+      setCustomCategoryName("");
+
+      // Читаем категории расходов из настроек бюджетов (localStorage)
+      const savedBudgets = localStorage.getItem("userBudgets");
+      let currentSpendingCats = DEFAULT_SPENDING_CATEGORIES;
+      if (savedBudgets) {
+        try {
+          const parsed = JSON.parse(savedBudgets);
+          const keys = Object.keys(parsed);
+          if (keys.length > 0) {
+            currentSpendingCats = keys;
+          }
+        } catch (e) {
+          console.error("Ошибка парсинга бюджетов", e);
+        }
+      }
+      setSpendingCategories(currentSpendingCats);
+
+      // Устанавливаем категорию по умолчанию
+      if (defaultType === "income") {
+        setCategory(INCOME_CATEGORIES[0]);
+      } else {
+        setCategory(currentSpendingCats[0]);
+      }
     }
   }, [isOpen, defaultType]);
 
@@ -63,7 +92,13 @@ export function TransactionModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!amount || !category || !reason || !date) {
+
+    // Определяем финальную категорию
+    const finalCategory = isCustomCategory
+      ? customCategoryName.trim()
+      : category;
+
+    if (!amount || !finalCategory || !reason || !date) {
       toast.error(t("fillAllFields") || "Заполните все поля");
       return;
     }
@@ -73,10 +108,21 @@ export function TransactionModal({
       await addTransaction({
         type,
         amount: parseFloat(amount),
-        category,
+        category: finalCategory,
         reason,
         date,
       });
+
+      // МАГИЯ: Если это новая кастомная категория расхода, добавляем её в карточку лимитов
+      if (type === "spending" && isCustomCategory) {
+        const saved = localStorage.getItem("userBudgets");
+        const budgets = saved ? JSON.parse(saved) : {};
+        if (!budgets[finalCategory]) {
+          budgets[finalCategory] = 0; // Сохраняем с лимитом $0, чтобы она появилась в настройках
+          localStorage.setItem("userBudgets", JSON.stringify(budgets));
+        }
+      }
+
       toast.success(t("transactionSaved") || "Транзакция сохранена!");
       onClose();
     } catch (error) {
@@ -88,9 +134,12 @@ export function TransactionModal({
 
   const handleTypeChange = (newType: "income" | "spending") => {
     setType(newType);
-    setCategory(
-      newType === "income" ? INCOME_CATEGORIES[0] : SPENDING_CATEGORIES[0],
-    );
+    setIsCustomCategory(false);
+    if (newType === "income") {
+      setCategory(INCOME_CATEGORIES[0]);
+    } else {
+      setCategory(spendingCategories[0]);
+    }
   };
 
   return (
@@ -161,24 +210,61 @@ export function TransactionModal({
             <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">
               Категория
             </label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500/50 outline-none transition-all appearance-none"
-            >
-              {(type === "income"
-                ? INCOME_CATEGORIES
-                : SPENDING_CATEGORIES
-              ).map((cat) => (
-                <option
-                  key={cat}
-                  value={cat}
-                  className="bg-white dark:bg-[#0b000b] text-gray-900 dark:text-white"
+
+            {!isCustomCategory ? (
+              <select
+                value={category}
+                onChange={(e) => {
+                  if (e.target.value === "ADD_CUSTOM") {
+                    setIsCustomCategory(true);
+                  } else {
+                    setCategory(e.target.value);
+                  }
+                }}
+                className="w-full px-4 py-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500/50 outline-none transition-all appearance-none"
+              >
+                {(type === "income"
+                  ? INCOME_CATEGORIES
+                  : spendingCategories
+                ).map((cat) => (
+                  <option
+                    key={cat}
+                    value={cat}
+                    className="bg-white dark:bg-[#0b000b] text-gray-900 dark:text-white"
+                  >
+                    {cat}
+                  </option>
+                ))}
+                {/* Динамическая опция добавления своей категории */}
+                {type === "spending" && (
+                  <option
+                    value="ADD_CUSTOM"
+                    className="bg-white dark:bg-[#0b000b] text-purple-600 dark:text-purple-400 font-bold"
+                  >
+                    ➕ Добавить свою категорию...
+                  </option>
+                )}
+              </select>
+            ) : (
+              // Поле ввода для новой кастомной категории
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  autoFocus
+                  value={customCategoryName}
+                  onChange={(e) => setCustomCategoryName(e.target.value)}
+                  placeholder="Введите название..."
+                  className="w-full px-4 py-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-purple-500/50 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500/50 outline-none transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setIsCustomCategory(false)}
+                  className="px-4 bg-black/5 dark:bg-white/5 rounded-2xl text-gray-500 hover:text-rose-500 transition-colors flex items-center justify-center border border-gray-200 dark:border-white/10"
                 >
-                  {cat}
-                </option>
-              ))}
-            </select>
+                  <X size={20} />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Поле: Название / Описание */}
