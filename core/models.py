@@ -41,3 +41,13 @@ class VerificationCode(models.Model):
         return str(random.randint(100000, 999999))
 
 
+class PiggyBank(models.Model):
+    # Привязываем копилку к пользователю (1 пользователь = 1 копилка)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='piggybank')
+    name = models.CharField(max_length=255, default="MacBook Pro")
+    # Храним суммы в базовой валюте (USD)
+    target_amount = models.DecimalField(max_digits=12, decimal_places=2, default=2500.00)
+    saved_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+
+    def __str__(self):
+        return f"PiggyBank of {self.user.email}"

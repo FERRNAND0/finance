@@ -1,28 +1,31 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useApp } from "../contexts/AppContext";
 import { useT } from "../i18n/translations";
-import { Target, Plus, Minus, Settings2, Check, X } from "lucide-react";
+import {
+  Target,
+  Plus,
+  Minus,
+  Settings2,
+  Check,
+  X,
+  Loader2,
+} from "lucide-react";
 
 export function PiggyBank() {
   const { language } = useApp();
   const t = useT(language);
 
-  const [goalName, setGoalName] = useState(
-    () => localStorage.getItem("piggy_name") || "MacBook Pro",
-  );
-  const [targetAmount, setTargetAmount] = useState(() =>
-    parseFloat(localStorage.getItem("piggy_target") || "2500"),
-  );
-  const [savedAmount, setSavedAmount] = useState(() =>
-    parseFloat(localStorage.getItem("piggy_saved") || "500"),
-  );
+  const [isLoading, setIsLoading] = useState(true);
+  const [goalName, setGoalName] = useState("");
+  const [targetAmount, setTargetAmount] = useState(1);
+  const [savedAmount, setSavedAmount] = useState(0);
 
   const [mode, setMode] = useState<"idle" | "add" | "subtract" | "edit">(
     "idle",
   );
   const [inputValue, setInputValue] = useState("");
-  const [editName, setEditName] = useState(goalName);
-  const [editTarget, setEditTarget] = useState(targetAmount.toString());
+  const [editName, setEditName] = useState("");
+  const [editTarget, setEditTarget] = useState("");
 
   const [currency, setCurrency] = useState(
     () => localStorage.getItem("app_currency") || "USD",
@@ -30,6 +33,7 @@ export function PiggyBank() {
   const [rates, setRates] = useState<Record<string, number>>({ USD: 1 });
   const [animate, setAnimate] = useState(false);
 
+  // Следим за сменой валюты
   useEffect(() => {
     const handleCurrencyChange = () =>
       setCurrency(localStorage.getItem("app_currency") || "USD");
@@ -38,6 +42,7 @@ export function PiggyBank() {
       window.removeEventListener("currencyChanged", handleCurrencyChange);
   }, []);
 
+  // Загружаем курсы валют
   useEffect(() => {
     fetch("https://api.exchangerate-api.com/v4/latest/USD")
       .then((res) => res.json())
@@ -45,14 +50,32 @@ export function PiggyBank() {
       .catch((err) => console.error("Ошибка загрузки курсов", err));
   }, []);
 
+  // ЗАГРУЗКА ДАННЫХ ИЗ БАЗЫ (DJANGO)
   useEffect(() => {
-    localStorage.setItem("piggy_name", goalName);
-    localStorage.setItem("piggy_target", targetAmount.toString());
-    localStorage.setItem("piggy_saved", savedAmount.toString());
-    setAnimate(false);
-    const timer = setTimeout(() => setAnimate(true), 100);
-    return () => clearTimeout(timer);
-  }, [goalName, targetAmount, savedAmount]);
+    const fetchPiggyBank = async () => {
+      try {
+        const token = localStorage.getItem("access");
+        const res = await fetch("https://finance.lxv.uz/api/piggybank/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+
+        if (res.ok) {
+          setGoalName(data.name);
+          setTargetAmount(parseFloat(data.target_amount));
+          setSavedAmount(parseFloat(data.saved_amount));
+
+          // Запускаем анимацию после загрузки
+          setTimeout(() => setAnimate(true), 100);
+        }
+      } catch (error) {
+        console.error("Ошибка загрузки копилки:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchPiggyBank();
+  }, []);
 
   const rate = rates[currency] || 1;
 
@@ -78,23 +101,66 @@ export function PiggyBank() {
   const percentage =
     targetAmount > 0 ? Math.min((savedAmount / targetAmount) * 100, 100) : 0;
 
-  const handleAction = () => {
-    const val = parseFloat(inputValue) / rate;
-    if (isNaN(val) || val <= 0) return;
-    if (mode === "add")
-      setSavedAmount((prev) => Math.min(prev + val, targetAmount));
-    else if (mode === "subtract")
-      setSavedAmount((prev) => Math.max(prev - val, 0));
-    setMode("idle");
-    setInputValue("");
+  // ФУНКЦИЯ ДЛЯ СОХРАНЕНИЯ В БАЗУ ДАННЫХ
+  const saveToBackend = async (name: string, target: number, saved: number) => {
+    try {
+      const token = localStorage.getItem("access");
+      await fetch("https://finance.lxv.uz/api/piggybank/", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: name,
+          target_amount: target.toFixed(2),
+          saved_amount: saved.toFixed(2),
+        }),
+      });
+    } catch (error) {
+      console.error("Ошибка сохранения копилки:", error);
+    }
   };
 
-  const handleSaveSettings = () => {
-    setGoalName(editName);
-    const newTarget = parseFloat(editTarget) / rate;
-    if (!isNaN(newTarget) && newTarget > 0) setTargetAmount(newTarget);
+  const handleAction = async () => {
+    const val = parseFloat(inputValue) / rate;
+    if (isNaN(val) || val <= 0) return;
+
+    let newSaved = savedAmount;
+    if (mode === "add") newSaved = Math.min(savedAmount + val, targetAmount);
+    else if (mode === "subtract") newSaved = Math.max(savedAmount - val, 0);
+
+    setSavedAmount(newSaved);
     setMode("idle");
+    setInputValue("");
+
+    // Перезапуск анимации
+    setAnimate(false);
+    setTimeout(() => setAnimate(true), 50);
+
+    // Отправляем в Django
+    await saveToBackend(goalName, targetAmount, newSaved);
   };
+
+  const handleSaveSettings = async () => {
+    const newTarget = parseFloat(editTarget) / rate;
+    if (isNaN(newTarget) || newTarget <= 0) return;
+
+    setGoalName(editName);
+    setTargetAmount(newTarget);
+    setMode("idle");
+
+    // Отправляем в Django
+    await saveToBackend(editName, newTarget, savedAmount);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="liquid-glass p-6 rounded-3xl border border-gray-200 dark:border-white/10 w-full flex items-center justify-center min-h-[220px]">
+        <Loader2 className="animate-spin text-purple-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="liquid-glass p-5 sm:p-6 rounded-3xl border border-gray-200 dark:border-white/10 bg-gradient-to-br from-white/50 to-transparent dark:from-black/20 dark:to-transparent shadow-xl w-full relative overflow-hidden">
@@ -221,7 +287,7 @@ export function PiggyBank() {
               type="text"
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
-              className="w-full bg-black/5 border-white/10 rounded-2xl px-4 py-3 outline-none text-white focus:border-purple-500"
+              className="w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3 outline-none text-gray-900 dark:text-white focus:border-purple-500"
             />
           </div>
           <div className="space-y-1.5">
@@ -232,7 +298,7 @@ export function PiggyBank() {
               type="number"
               value={editTarget}
               onChange={(e) => setEditTarget(e.target.value)}
-              className="w-full bg-black/5 border-white/10 rounded-2xl px-4 py-3 outline-none text-white focus:border-purple-500"
+              className="w-full bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-2xl px-4 py-3 outline-none text-gray-900 dark:text-white focus:border-purple-500"
             />
           </div>
           <div className="flex gap-2 pt-2">
@@ -244,7 +310,7 @@ export function PiggyBank() {
             </button>
             <button
               onClick={() => setMode("idle")}
-              className="p-3 bg-white/10 text-gray-300 hover:bg-white/20 rounded-xl transition-all"
+              className="p-3 bg-black/5 dark:bg-white/10 text-gray-500 hover:bg-black/10 rounded-xl transition-all"
             >
               <X size={18} />
             </button>

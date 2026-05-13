@@ -203,3 +203,16 @@ class UserProfileUpdateView(views.APIView):
             
         user.save()
         return Response(UserSerializer(user).data)
+
+from .models import PiggyBank
+from .serializers import PiggyBankSerializer
+
+class PiggyBankView(generics.RetrieveUpdateAPIView):
+    serializer_class = PiggyBankSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    # Эта функция автоматически находит копилку текущего юзера или создает новую
+    def get_object(self):
+        obj, created = PiggyBank.objects.get_or_create(user=self.request.user)
+        return obj
+        

@@ -42,3 +42,10 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         # Добавляем данные юзера в ответ
         data['user'] = UserSerializer(self.user).data
         return data
+
+from .models import PiggyBank # Не забудь импортировать модель
+
+class PiggyBankSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PiggyBank
+        fields = ['name', 'target_amount', 'saved_amount']

@@ -1,4 +1,5 @@
 from django.contrib import admin
+from .views import PiggyBankView
 from django.urls import path
 from .views import (
     RegisterView, VerifyCodeView, TransactionListCreateView, 
@@ -14,7 +15,7 @@ urlpatterns = [
     
     # --- НОВЫЙ ПУТЬ ДЛЯ ОБНОВЛЕНИЯ ПРОФИЛЯ ---
     path('api/auth/update/', UserProfileUpdateView.as_view(), name='update-profile'),
-    
+    path('piggybank/', PiggyBankView.as_view(), name='piggybank'),
     path('api/transactions/delete-all/', TransactionDeleteAllView.as_view(), name='transaction-delete-all'),
     path('api/transactions/', TransactionListCreateView.as_view(), name='transactions'),
     path('api/transactions/<int:pk>/', TransactionDeleteView.as_view(), name='transaction-delete'),
