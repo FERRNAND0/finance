@@ -214,24 +214,27 @@ export function TransactionModal({
             </button>
           </div>
 
-          {/* ПОЛЕ: СУММА (с динамической валютой) */}
+          {/* ПОЛЕ: СУММА (с умным flex-контейнером) */}
           <div className="space-y-1.5">
             <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1 flex items-center justify-between">
               <span>{t("amount") || "Сумма"}</span>
               <span className="text-purple-500 font-bold">в {currency}</span>
             </label>
-            <div className="relative">
-              {/* Символ валюты внутри инпута */}
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-400 font-bold text-lg pointer-events-none">
+
+            {/* Обертка, которая выглядит как инпут */}
+            <div className="flex items-center w-full px-4 py-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 focus-within:border-purple-500/50 focus-within:ring-2 focus-within:ring-purple-500/50 transition-all">
+              {/* Символ валюты (flex-shrink-0 не дает ему сжаться) */}
+              <span className="text-gray-500 dark:text-gray-400 font-bold text-lg mr-2 select-none flex-shrink-0">
                 {CURRENCY_SYMBOLS[currency] || "$"}
               </span>
+              {/* Прозрачный инпут, занимающий всё остальное место */}
               <input
                 type="number"
                 step="0.01"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
                 placeholder="0.00"
-                className="w-full pl-9 pr-4 py-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500/50 outline-none transition-all text-lg font-semibold"
+                className="flex-1 bg-transparent text-gray-900 dark:text-white placeholder-gray-400 outline-none text-lg font-semibold w-full"
               />
             </div>
           </div>

@@ -6,8 +6,6 @@ import {
   TrendingDown,
   Plus,
   Minus,
-  Eye,
-  EyeOff,
   Sparkles,
   RefreshCw,
   ArrowUpRight,
@@ -15,6 +13,7 @@ import {
   Search,
   Trash2,
   Download,
+  ChevronDown, // <-- Иконка стрелочки для меню валют
 } from "lucide-react";
 import {
   AreaChart,
@@ -47,17 +46,13 @@ const COLORS = [
   "#fb7185",
 ];
 
-// Список доступных валют
 const CURRENCIES = ["USD", "EUR", "RUB", "KZT", "KGS", "UZS"] as const;
 type CurrencyType = (typeof CURRENCIES)[number];
 
-// ==========================================
-// КОМПОНЕНТ: Свайп для удаления
-// ==========================================
 const SwipeableTransaction = ({
   tx,
   onDelete,
-  formatCurrency, // <-- передаем функцию форматирования
+  formatCurrency,
 }: {
   tx: any;
   onDelete: (id: string) => void;
@@ -166,34 +161,28 @@ export function DashboardPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<"income" | "spending">("income");
-  const [showBalance, setShowBalance] = useState(true);
   const [period, setPeriod] = useState<"week" | "month" | "all">("month");
 
-  // ==========================================
-  // ДИНАМИЧЕСКИЕ ВАЛЮТЫ И КУРСЫ
-  // ==========================================
   const [currency, setCurrency] = useState<CurrencyType>(
     () => (localStorage.getItem("app_currency") as CurrencyType) || "USD",
   );
   const [rates, setRates] = useState<Record<string, number>>({ USD: 1 });
 
-  // Сохраняем выбранную валюту и уведомляем приложение
+  // Состояние для выпадающего меню валют
+  const [isCurrencyMenuOpen, setIsCurrencyMenuOpen] = useState(false);
+
   useEffect(() => {
     localStorage.setItem("app_currency", currency);
     window.dispatchEvent(new Event("currencyChanged"));
   }, [currency]);
 
-  // Загружаем актуальные курсы с бесплатного API (относительно USD)
   useEffect(() => {
     fetch("https://api.exchangerate-api.com/v4/latest/USD")
       .then((res) => res.json())
-      .then((data) => {
-        setRates(data.rates);
-      })
+      .then((data) => setRates(data.rates))
       .catch((err) => console.error("Ошибка загрузки курсов валют", err));
   }, []);
 
-  // Умная функция форматирования с учетом курса
   const formatCurrency = useCallback(
     (n: number) => {
       const locales: Record<CurrencyType, string> = {
@@ -204,24 +193,18 @@ export function DashboardPage() {
         KGS: "ky-KG",
         UZS: "uz-UZ",
       };
-
-      // Умножаем на актуальный курс (если API еще грузится, умножит на 1)
       const rate = rates[currency] || 1;
       const convertedAmount = n * rate;
 
       return new Intl.NumberFormat(locales[currency], {
         style: "currency",
         currency: currency,
-        // Убираем копейки для крупных валют, чтобы интерфейс не был перегружен
         minimumFractionDigits: ["UZS", "KZT", "KGS"].includes(currency) ? 0 : 2,
       }).format(convertedAmount);
     },
     [currency, rates],
   );
 
-  // ==========================================
-  // ТУЛТИПЫ ДЛЯ ГРАФИКОВ (теперь они знают про валюту)
-  // ==========================================
   const ChartTip = ({ active, payload, label }: any) => {
     if (!active || !payload?.length) return null;
     return (
@@ -409,6 +392,7 @@ export function DashboardPage() {
 
   return (
     <div className="p-4 lg:p-6 2xl:p-10 space-y-5 2xl:space-y-7 overflow-x-hidden">
+      {/* HEADER */}
       <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
         <div>
           <h1
@@ -442,7 +426,6 @@ export function DashboardPage() {
           </p>
         </div>
 
-        {/* Навигация фильтров и валют */}
         <div className="flex flex-wrap items-center gap-2 self-start xl:self-auto">
           {/* Периоды */}
           <div className="flex bg-white/30 dark:bg-muted rounded-xl p-1 gap-1 backdrop-blur-sm border border-white/40 dark:border-border">
@@ -462,20 +445,6 @@ export function DashboardPage() {
             ))}
           </div>
 
-          {/* Переключатель валют */}
-          <div className="flex flex-wrap bg-white/30 dark:bg-muted rounded-xl p-1 gap-1 backdrop-blur-sm border border-white/40 dark:border-border">
-            {CURRENCIES.map((c) => (
-              <button
-                key={c}
-                onClick={() => setCurrency(c)}
-                className={`px-2.5 py-1.5 rounded-lg transition-all ${currency === c ? "bg-purple-600 text-white shadow-sm" : "text-muted-foreground hover:text-foreground hover:bg-white/40 dark:hover:bg-white/10"}`}
-                style={{ fontSize: "0.75rem", fontWeight: 600 }}
-              >
-                {c}
-              </button>
-            ))}
-          </div>
-
           <button
             onClick={handleExportExcel}
             className="p-2 h-[34px] w-[34px] bg-purple-600/10 text-purple-600 dark:text-purple-400 rounded-xl hover:bg-purple-600/20 transition-all border border-purple-500/20 flex items-center justify-center shadow-sm active:scale-95"
@@ -487,12 +456,13 @@ export function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 2xl:gap-5">
+        {/* БЛОК БАЛАНСА */}
         <div
           className={`lg:col-span-2 ${cardCls} p-5 sm:p-6 2xl:p-8 relative overflow-hidden`}
         >
           <div className="absolute top-0 right-0 w-56 h-56 rounded-full bg-primary/8 blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/4" />
           <div className="relative z-10">
-            <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center justify-between mb-1 relative">
               <span
                 className="text-muted-foreground"
                 style={{
@@ -503,13 +473,48 @@ export function DashboardPage() {
               >
                 {t("totalBalance")}
               </span>
-              <button
-                onClick={() => setShowBalance(!showBalance)}
-                className="text-muted-foreground hover:text-foreground transition-colors p-1"
-              >
-                <Eye size={15} />
-              </button>
+
+              {/* ВЫПАДАЮЩЕЕ МЕНЮ ВАЛЮТ (заменили глаз) */}
+              <div className="relative">
+                <button
+                  onClick={() => setIsCurrencyMenuOpen(!isCurrencyMenuOpen)}
+                  className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors p-1.5 bg-black/5 dark:bg-white/5 rounded-lg border border-transparent hover:border-gray-200 dark:hover:border-white/10 active:scale-95"
+                >
+                  <span style={{ fontSize: "0.75rem", fontWeight: 700 }}>
+                    {currency}
+                  </span>
+                  <ChevronDown
+                    size={14}
+                    className={`transition-transform duration-200 ${isCurrencyMenuOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+
+                {isCurrencyMenuOpen && (
+                  <>
+                    {/* Невидимый слой на весь экран для закрытия по клику вне меню */}
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setIsCurrencyMenuOpen(false)}
+                    />
+                    <div className="absolute right-0 top-full mt-2 w-24 bg-white/95 dark:bg-[#121212]/95 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden overflow-y-auto max-h-48 custom-scrollbar animate-in fade-in slide-in-from-top-2 duration-200">
+                      {CURRENCIES.map((c) => (
+                        <button
+                          key={c}
+                          onClick={() => {
+                            setCurrency(c);
+                            setIsCurrencyMenuOpen(false);
+                          }}
+                          className={`w-full text-left px-4 py-2.5 text-sm transition-all ${currency === c ? "bg-purple-500/15 text-purple-600 dark:text-purple-400 font-bold" : "text-gray-700 dark:text-gray-300 hover:bg-black/5 dark:hover:bg-white/10"}`}
+                        >
+                          {c}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
+
             <div
               className="text-foreground mt-1"
               style={{
@@ -519,7 +524,7 @@ export function DashboardPage() {
                 lineHeight: 1,
               }}
             >
-              {showBalance ? formatCurrency(balance) : "••••••"}
+              {formatCurrency(balance)}
             </div>
             <div
               className={`flex items-center gap-1 mt-2.5 ${totalIncome >= totalSpending ? "text-emerald-500" : "text-rose-500"}`}
@@ -590,7 +595,7 @@ export function DashboardPage() {
                   letterSpacing: "-0.02em",
                 }}
               >
-                {showBalance ? formatCurrency(totalIncome) : "••••"}
+                {formatCurrency(totalIncome)}
               </p>
             </div>
           </div>
@@ -617,7 +622,7 @@ export function DashboardPage() {
                   letterSpacing: "-0.02em",
                 }}
               >
-                {showBalance ? formatCurrency(totalSpending) : "••••"}
+                {formatCurrency(totalSpending)}
               </p>
             </div>
           </div>
