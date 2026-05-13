@@ -10,7 +10,7 @@ import {
   X,
   Save,
   Lock,
-  ChevronDown, // <-- Добавили иконку стрелочки
+  ChevronDown,
 } from "lucide-react";
 import { useApp } from "../contexts/AppContext";
 import { useT } from "../i18n/translations";
@@ -122,67 +122,136 @@ export function SettingsPage() {
         {t("settingsTitle") || "Настройки"}
       </h1>
 
-      {/* ── Language ──────────────────────────────── */}
-      {/* Убрали overflow-hidden и добавили relative z-20, чтобы меню падало поверх Опасной зоны */}
-      {/* ── Language ──────────────────────────────── */}
-      <section className="liquid-glass rounded-2xl relative z-20">
+      {/* ── Profile ─────────────────────────────────── */}
+      <section className={cardCls}>
         <div className={sectionHead}>
           <div className="flex items-center gap-2">
-            <Globe size={15} className="text-primary" />
+            <UserIcon size={15} className="text-primary" />
             <h2
               className="text-foreground"
               style={{ fontSize: "0.9rem", fontWeight: 600 }}
             >
-              {t("languageSection") || "Язык"}
+              {t("profileSection") || "Профиль"}
             </h2>
           </div>
-        </div>
-        <div className="p-5">
-          {/* Кастомный Select */}
-          <div className="relative">
+          {!isEditingProfile ? (
             <button
-              onClick={() => setIsLangOpen(!isLangOpen)}
-              className="w-full px-4 py-3.5 rounded-2xl bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white flex items-center justify-between hover:bg-black/10 dark:hover:bg-white/10 transition-all font-semibold focus:ring-2 focus:ring-purple-500/50 outline-none"
+              onClick={() => setIsEditingProfile(true)}
+              className="text-primary hover:text-primary/80 transition-colors flex items-center gap-1"
+              style={{ fontSize: "0.75rem", fontWeight: 600 }}
             >
-              <span>{currentLangLabel}</span>
-              <ChevronDown
-                size={18}
-                className={`text-gray-400 transition-transform duration-200 ${isLangOpen ? "rotate-180" : ""}`}
-              />
+              <Edit2 size={12} /> {t("edit") || "Изменить"}
             </button>
+          ) : (
+            <button
+              onClick={() => {
+                setIsEditingProfile(false);
+                setEditFirstName(currentUser?.firstName || "");
+                setEditLastName(currentUser?.lastName || "");
+                setEditEmail(currentUser?.email || "");
+                setEditPassword("");
+              }}
+              className="text-gray-400 hover:text-white transition-colors"
+            >
+              <X size={16} />
+            </button>
+          )}
+        </div>
 
-            {/* Выпадающее меню */}
-            {isLangOpen && (
-              <>
-                {/* Невидимая подложка для закрытия по клику вне меню */}
-                <div
-                  className="fixed inset-0 z-30"
-                  onClick={() => setIsLangOpen(false)}
-                />
-
-                <div className="absolute left-0 right-0 top-full mt-2 bg-white/95 dark:bg-[#1a1a1a]/95 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl z-40 max-h-60 overflow-y-auto custom-scrollbar p-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
-                  {LANGS.map((lang) => (
-                    <button
-                      key={lang.code}
-                      onClick={() => {
-                        setLanguage(lang.code);
-                        setIsLangOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
-                        language === lang.code
-                          ? "bg-purple-500/15 text-purple-600 dark:text-purple-400"
-                          : "text-gray-900 dark:text-white hover:bg-black/5 dark:hover:bg-white/5"
-                      }`}
-                    >
-                      {lang.label}
-                    </button>
-                  ))}
+        <div className="p-5">
+          {!isEditingProfile ? (
+            <div className="flex items-center gap-4">
+              <div
+                className="w-[72px] h-[72px] rounded-2xl bg-primary/15 border-2 border-primary/25 flex items-center justify-center shadow-lg flex-shrink-0"
+                style={{ fontSize: "1.4rem", fontWeight: 700 }}
+              >
+                <span className="text-primary">{initials}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p
+                  className="text-foreground truncate"
+                  style={{ fontSize: "1.2rem", fontWeight: 700 }}
+                >
+                  {currentUser?.firstName} {currentUser?.lastName}
+                </p>
+                <p
+                  className="text-muted-foreground truncate mt-0.5"
+                  style={{ fontSize: "0.85rem" }}
+                >
+                  {currentUser?.email}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">
+                    {t("firstName") || "Имя"}
+                  </label>
+                  <input
+                    type="text"
+                    value={editFirstName}
+                    onChange={(e) => setEditFirstName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white focus:ring-2 focus:ring-primary/50 outline-none transition-all text-sm"
+                  />
                 </div>
-              </>
-            )}
-          </div>
+                <div className="space-y-1">
+                  <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">
+                    {t("lastName") || "Фамилия"}
+                  </label>
+                  <input
+                    type="text"
+                    value={editLastName}
+                    onChange={(e) => setEditLastName(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white focus:ring-2 focus:ring-primary/50 outline-none transition-all text-sm"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">
+                  {t("emailLabel") || "Email"}
+                </label>
+                <input
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white focus:ring-2 focus:ring-primary/50 outline-none transition-all text-sm"
+                />
+              </div>
+              <div className="space-y-1 pt-2 border-t border-white/10">
+                <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1 flex items-center gap-1">
+                  <Lock size={10} />{" "}
+                  {t("newPassword") ||
+                    "Новый пароль (оставьте пустым, если не меняете)"}
+                </label>
+                <input
+                  type="password"
+                  value={editPassword}
+                  onChange={(e) => setEditPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white focus:ring-2 focus:ring-primary/50 outline-none transition-all text-sm"
+                />
+              </div>
+              <button
+                onClick={handleUpdateProfile}
+                disabled={isSaving}
+                className="w-full py-2.5 mt-2 rounded-xl bg-primary text-white font-bold hover:bg-primary/90 disabled:opacity-50 transition-all flex items-center justify-center gap-2 text-sm shadow-lg shadow-primary/20"
+              >
+                {isSaving ? (
+                  t("saving") || "Сохранение..."
+                ) : (
+                  <>
+                    <Save size={16} />{" "}
+                    {t("saveSettings") || "Сохранить изменения"}
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </div>
       </section>
+
       {/* ── Appearance ──────────────────────────────── */}
       <section className={cardCls}>
         <div className={sectionHead}>
@@ -242,7 +311,8 @@ export function SettingsPage() {
       </section>
 
       {/* ── Language ──────────────────────────────── */}
-      <section className={cardCls}>
+      {/* Используем relative z-20, чтобы выпадающее меню перекрывало нижние элементы */}
+      <section className="liquid-glass rounded-2xl relative z-20">
         <div className={sectionHead}>
           <div className="flex items-center gap-2">
             <Globe size={15} className="text-primary" />
@@ -254,9 +324,7 @@ export function SettingsPage() {
             </h2>
           </div>
         </div>
-        <div className="p-5 relative z-20">
-          {" "}
-          {/* z-20 важно, чтобы меню не уходило под Опасную зону */}
+        <div className="p-5">
           {/* Кастомный Select */}
           <div className="relative">
             <button
