@@ -30,6 +30,7 @@ import { useApp } from "../contexts/AppContext";
 import { useT } from "../i18n/translations";
 import { TransactionModal } from "../components/TransactionModal";
 import { format, subDays, startOfDay, isAfter } from "date-fns";
+import { BudgetLimits } from "../components/BudgetLimits";
 
 const COLORS = [
   "#8b5cf6",
@@ -541,7 +542,9 @@ export function DashboardPage() {
           )}
         </div>
       </div>
-
+      <div className="mt-4 2xl:mt-5">
+        <BudgetLimits />
+      </div>
       {/* AI + Recent */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 2xl:gap-5">
         {/* AI card */}
@@ -679,12 +682,12 @@ export function DashboardPage() {
       />
       {/* Плавающая кнопка добавления (FAB) - видна только на мобильных (md:hidden) */}
       {/* Плавающая кнопка добавления (FAB) - видна только на мобильных (md:hidden) */}
-      {/* Плавающая кнопка (FAB) - Анимированная, стеклянная, работает как переключатель */}
+      {/* Плавающая кнопка (FAB) - Сверхплавная анимация (iOS style) */}
       <button
         onClick={() =>
           modalOpen ? setModalOpen(false) : openModal("spending")
         }
-        className={`md:hidden fixed bottom-24 right-6 w-14 h-14 rounded-full flex items-center justify-center z-[60] active:scale-95 transition-all duration-300 backdrop-blur-xl border shadow-xl ${
+        className={`md:hidden fixed bottom-24 right-6 w-14 h-14 rounded-full flex items-center justify-center z-[60] active:scale-90 transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] backdrop-blur-xl border shadow-xl ${
           modalOpen
             ? "bg-rose-500/30 border-rose-500/30 shadow-rose-500/20 text-rose-100 rotate-[135deg]"
             : "bg-purple-500/30 border-purple-400/30 shadow-purple-500/20 text-white rotate-0 hover:bg-purple-500/40"
