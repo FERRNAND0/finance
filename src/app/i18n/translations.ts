@@ -312,6 +312,12 @@ export const translations = {
   },
 
   uzb: {
+    theme_default: "Brend uslubi",
+    theme_bw: "Oq va qora",
+    theme_white: "Sof oq",
+    theme_gray: "Grafit kulrang",
+    theme_sea_green: "Dengiz yashil",
+    theme_sea_blue: "Dengiz ko'k",
     appName: "S&F",
     appSubtitle: "Tizim va Moliya",
     lang_ru: "Русский",
@@ -449,6 +455,12 @@ export const translations = {
   },
 
   kk: {
+    theme_default: "Біздің фирмалық",
+    theme_bw: "Ақ пен қара",
+    theme_white: "Таза ақ",
+    theme_gray: "Сұр графит",
+    theme_sea_green: "Теңіз жасыл",
+    theme_sea_blue: "Теңіз көк",
     appName: "S&F",
     appSubtitle: "Жүйе және Қаржы",
     lang_ru: "Русский",
@@ -586,6 +598,12 @@ export const translations = {
   },
 
   ky: {
+    theme_default: "Биздин фирмалык",
+    theme_bw: "Ак жана кара",
+    theme_white: "Таза ак",
+    theme_gray: "Боз графит",
+    theme_sea_green: "Деңиз жашыл",
+    theme_sea_blue: "Деңиз көк",
     appName: "S&F",
     appSubtitle: "Система жана Финансы",
     lang_ru: "Русский",
@@ -724,6 +742,12 @@ export const translations = {
 
   de: {
     appName: "S&F",
+    theme_default: "Unsere Signatur",
+    theme_bw: "Schwarz & Weiß",
+    theme_white: "Reines Weiß",
+    theme_gray: "Grafitgrau",
+    theme_sea_green: "Meergrün",
+    theme_sea_blue: "Meerblau",
     appSubtitle: "System & Finanzen",
     lang_ru: "Русский",
     lang_en: "English",
@@ -861,6 +885,12 @@ export const translations = {
 
   lb: {
     appName: "S&F",
+    theme_default: "Eis Signatur",
+    theme_bw: "Schwaarz & Wäiss",
+    theme_white: "Rengt Wäiss",
+    theme_gray: "Grafitgro",
+    theme_sea_green: "Miergréng",
+    theme_sea_blue: "Mierblo",
     appSubtitle: "System & Finanzen",
     lang_ru: "Русский",
     lang_en: "English",
