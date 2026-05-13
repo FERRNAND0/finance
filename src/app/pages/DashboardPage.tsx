@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ExpenseChart } from "../components/ExpenseChart";
-import { BudgetLimits } from "../components/BudgetLimits"; // Твои лимиты
+import { BudgetLimits } from "../components/BudgetLimits";
 import {
   TrendingUp,
   TrendingDown,
@@ -12,7 +12,8 @@ import {
   RefreshCw,
   ArrowUpRight,
   ArrowDownRight,
-  Search, // <-- Добавили иконку лупы
+  Search,
+  Trash2, // <-- Иконка корзины
 } from "lucide-react";
 import {
   AreaChart,
@@ -32,6 +33,7 @@ import { useApp } from "../contexts/AppContext";
 import { useT } from "../i18n/translations";
 import { TransactionModal } from "../components/TransactionModal";
 import { format, subDays, startOfDay, isAfter } from "date-fns";
+import { toast } from "sonner"; // <-- Для красивых уведомлений
 
 const COLORS = [
   "#8b5cf6",
@@ -82,18 +84,124 @@ const PieTip = ({ active, payload }: any) => {
   );
 };
 
+// ==========================================
+// КОМПОНЕНТ: Свайп для удаления
+// ==========================================
+const SwipeableTransaction = ({
+  tx,
+  onDelete,
+}: {
+  tx: any;
+  onDelete: (id: string) => void;
+}) => {
+  const [translateX, setTranslateX] = useState(0);
+  const startXRef = useRef(0);
+  const isDraggingRef = useRef(false);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    isDraggingRef.current = true;
+    startXRef.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDraggingRef.current) return;
+    const deltaX = e.touches[0].clientX - startXRef.current;
+
+    if (deltaX < 0) {
+      setTranslateX(Math.max(deltaX, -80));
+    } else if (translateX < 0 && deltaX > 0) {
+      setTranslateX(Math.min(translateX + deltaX, 0));
+    }
+  };
+
+  const handleTouchEnd = () => {
+    isDraggingRef.current = false;
+    if (translateX < -40) {
+      setTranslateX(-80);
+    } else {
+      setTranslateX(0);
+    }
+  };
+
+  return (
+    <div className="overflow-hidden rounded-xl mb-1">
+      <div
+        className="flex items-center transition-transform ease-out"
+        style={{
+          width: "calc(100% + 80px)",
+          transform: `translateX(${translateX}px)`,
+          transitionDuration: isDraggingRef.current ? "0s" : "0.3s",
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div className="w-full flex-shrink-0 flex items-center gap-3 p-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-muted/40 transition-colors">
+          <div
+            className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${tx.type === "income" ? "bg-emerald-500/15" : "bg-rose-500/15"}`}
+          >
+            {tx.type === "income" ? (
+              <TrendingUp size={13} className="text-emerald-500" />
+            ) : (
+              <TrendingDown size={13} className="text-rose-500" />
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p
+              className="text-foreground truncate"
+              style={{ fontSize: "0.85rem", fontWeight: 500 }}
+            >
+              {tx.reason || tx.category}
+            </p>
+            <p
+              className="text-muted-foreground flex gap-2"
+              style={{ fontSize: "0.72rem" }}
+            >
+              <span className="text-purple-500 dark:text-purple-400">
+                {tx.category}
+              </span>
+              <span>•</span>
+              <span>{new Date(tx.date).toLocaleDateString()}</span>
+            </p>
+          </div>
+          <span
+            className={`flex-shrink-0 ${tx.type === "income" ? "text-emerald-500" : "text-rose-500"}`}
+            style={{ fontSize: "0.88rem", fontWeight: 700 }}
+          >
+            {tx.type === "income" ? "+" : "-"}
+            {fmt(tx.amount)}
+          </span>
+        </div>
+
+        <div className="w-[80px] flex-shrink-0 flex items-center justify-center">
+          <button
+            onClick={() => onDelete(tx.id)}
+            className="w-12 h-12 bg-rose-500/20 text-rose-500 border border-rose-500/30 rounded-xl flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all active:scale-90"
+          >
+            <Trash2 size={20} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export function DashboardPage() {
-  const { currentUser, getUserTransactions, getBalance, language } = useApp();
+  // Добавили deleteTransaction из AppContext
+  const {
+    currentUser,
+    getUserTransactions,
+    getBalance,
+    language,
+    deleteTransaction,
+  } = useApp();
   const t = useT(language);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalType, setModalType] = useState<"income" | "spending">("income");
   const [showBalance, setShowBalance] = useState(true);
   const [period, setPeriod] = useState<"week" | "month" | "all">("month");
-
-  // --- Состояние для умного поиска ---
   const [searchQuery, setSearchQuery] = useState("");
-
   const [aiText, setAiText] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
 
@@ -115,7 +223,6 @@ export function DashboardPage() {
     .filter((t) => t.type === "spending")
     .reduce((s, t) => s + t.amount, 0);
 
-  /* balance timeline – last 14 days */
   const timeline = Array.from({ length: 14 }, (_, i) => {
     const day = subDays(new Date(), 13 - i);
     const bal = all
@@ -124,7 +231,6 @@ export function DashboardPage() {
     return { date: format(day, "MMM d"), balance: Math.max(0, bal) };
   });
 
-  /* spending by reason */
   const spendMap: Record<string, number> = {};
   filtered
     .filter((t) => t.type === "spending")
@@ -136,7 +242,6 @@ export function DashboardPage() {
     .sort((a, b) => b.value - a.value)
     .slice(0, 8);
 
-  /* income by reason */
   const incMap: Record<string, number> = {};
   filtered
     .filter((t) => t.type === "income")
@@ -148,7 +253,6 @@ export function DashboardPage() {
     .sort((a, b) => b.value - a.value)
     .slice(0, 8);
 
-  // --- ЛОГИКА УМНОГО ПОИСКА ---
   const displayTransactions = [...all]
     .filter((tx) => {
       if (!searchQuery.trim()) return true;
@@ -163,12 +267,10 @@ export function DashboardPage() {
         new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
 
-  // Если ищем что-то конкретное — показываем до 20 результатов. Если нет — только 6 последних.
   const recent = searchQuery.trim()
     ? displayTransactions.slice(0, 20)
     : displayTransactions.slice(0, 6);
 
-  /* AI Request to Django Backend */
   const fetchAI = useCallback(async () => {
     if (all.length === 0) return;
 
@@ -207,11 +309,24 @@ export function DashboardPage() {
     setModalOpen(true);
   };
 
+  // ФУНКЦИЯ УДАЛЕНИЯ
+  const handleDeleteTx = async (id: string) => {
+    try {
+      if (deleteTransaction) {
+        await deleteTransaction(id);
+        toast.success("Транзакция удалена");
+      } else {
+        toast.error("Функция удаления еще не подключена к бэкенду");
+      }
+    } catch (e) {
+      toast.error("Ошибка при удалении");
+    }
+  };
+
   const cardCls = "liquid-glass rounded-2xl";
 
   return (
-    <div className="p-4 lg:p-6 2xl:p-10 space-y-5 2xl:space-y-7">
-      {/* Header row */}
+    <div className="p-4 lg:p-6 2xl:p-10 space-y-5 2xl:space-y-7 overflow-x-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1
@@ -262,9 +377,7 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* Balance + Stats + Quick actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 2xl:gap-5">
-        {/* Balance card */}
         <div
           className={`lg:col-span-2 ${cardCls} p-5 sm:p-6 2xl:p-8 relative overflow-hidden`}
         >
@@ -300,7 +413,7 @@ export function DashboardPage() {
               {showBalance ? fmt(balance) : "••••••"}
             </div>
             <div
-              className={`flex items-center gap-1 mt-2.5 ${totalIncome >= totalSpending ? "text-income" : "text-spending"}`}
+              className={`flex items-center gap-1 mt-2.5 ${totalIncome >= totalSpending ? "text-emerald-500" : "text-rose-500"}`}
               style={{ fontSize: "0.82rem" }}
             >
               {totalIncome >= totalSpending ? (
@@ -313,7 +426,6 @@ export function DashboardPage() {
                 {period === "week" ? t("thisWeek") : t("thisMonth")}
               </span>
             </div>
-            {/* Mini chart */}
             <div className="mt-5 h-24 sm:h-28">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
@@ -345,11 +457,10 @@ export function DashboardPage() {
           </div>
         </div>
 
-        {/* Right column */}
         <div className="flex flex-col gap-4">
           <div className={`${cardCls} p-4 flex items-center gap-3`}>
-            <div className="w-10 h-10 rounded-xl bg-income/12 flex items-center justify-center flex-shrink-0">
-              <TrendingUp size={18} className="text-income" />
+            <div className="w-10 h-10 rounded-xl bg-emerald-500/12 flex items-center justify-center flex-shrink-0">
+              <TrendingUp size={18} className="text-emerald-500" />
             </div>
             <div>
               <p
@@ -363,7 +474,7 @@ export function DashboardPage() {
                 {t("income")}
               </p>
               <p
-                className="text-income"
+                className="text-emerald-500"
                 style={{
                   fontSize: "1.2rem",
                   fontWeight: 700,
@@ -375,8 +486,8 @@ export function DashboardPage() {
             </div>
           </div>
           <div className={`${cardCls} p-4 flex items-center gap-3`}>
-            <div className="w-10 h-10 rounded-xl bg-spending/12 flex items-center justify-center flex-shrink-0">
-              <TrendingDown size={18} className="text-spending" />
+            <div className="w-10 h-10 rounded-xl bg-rose-500/12 flex items-center justify-center flex-shrink-0">
+              <TrendingDown size={18} className="text-rose-500" />
             </div>
             <div>
               <p
@@ -390,7 +501,7 @@ export function DashboardPage() {
                 {t("spending")}
               </p>
               <p
-                className="text-spending"
+                className="text-rose-500"
                 style={{
                   fontSize: "1.2rem",
                   fontWeight: 700,
@@ -407,13 +518,13 @@ export function DashboardPage() {
           <div className="grid grid-cols-2 gap-3">
             <button
               onClick={() => openModal("income")}
-              className={`${cardCls} flex flex-col items-center justify-center gap-2 p-4 border-income/20 hover:border-income/40 group transition-all duration-200`}
+              className={`${cardCls} flex flex-col items-center justify-center gap-2 p-4 border-emerald-500/20 hover:border-emerald-500/40 group transition-all duration-200`}
             >
-              <div className="w-10 h-10 rounded-full bg-income/15 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Plus size={18} className="text-income" />
+              <div className="w-10 h-10 rounded-full bg-emerald-500/15 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Plus size={18} className="text-emerald-500" />
               </div>
               <span
-                className="text-income"
+                className="text-emerald-500"
                 style={{ fontSize: "0.72rem", fontWeight: 600 }}
               >
                 {t("quickIncome")}
@@ -421,13 +532,13 @@ export function DashboardPage() {
             </button>
             <button
               onClick={() => openModal("spending")}
-              className={`${cardCls} flex flex-col items-center justify-center gap-2 p-4 border-spending/20 hover:border-spending/40 group transition-all duration-200`}
+              className={`${cardCls} flex flex-col items-center justify-center gap-2 p-4 border-rose-500/20 hover:border-rose-500/40 group transition-all duration-200`}
             >
-              <div className="w-10 h-10 rounded-full bg-spending/15 flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Minus size={18} className="text-spending" />
+              <div className="w-10 h-10 rounded-full bg-rose-500/15 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Minus size={18} className="text-rose-500" />
               </div>
               <span
-                className="text-spending"
+                className="text-rose-500"
                 style={{ fontSize: "0.72rem", fontWeight: 600 }}
               >
                 {t("quickSpending")}
@@ -437,7 +548,6 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* Charts */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 2xl:gap-5">
         <div className={`${cardCls} p-5`}>
           <h3
@@ -555,7 +665,6 @@ export function DashboardPage() {
         </div>
       </div>
 
-      {/* AI + Recent */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 2xl:gap-5">
         <div className={`${cardCls} p-5 relative overflow-hidden`}>
           <div className="absolute top-0 right-0 w-36 h-36 rounded-full bg-primary/8 blur-3xl pointer-events-none" />
@@ -618,7 +727,7 @@ export function DashboardPage() {
           </div>
         </div>
 
-        {/* ВАЖНО: Обновленный блок с поиском (Live Search) */}
+        {/* БЛОК СО СПИСКОМ (ПОИСК И СВАЙП) */}
         <div className={`${cardCls} p-5 flex flex-col h-full`}>
           <div className="flex items-center justify-between mb-4 gap-3">
             <h3
@@ -628,7 +737,6 @@ export function DashboardPage() {
               {t("recentTransactions")}
             </h3>
 
-            {/* Стеклянный инпут для поиска */}
             <div className="relative flex-1 max-w-[200px]">
               <Search
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
@@ -657,47 +765,13 @@ export function DashboardPage() {
               </p>
             </div>
           ) : (
-            <div className="space-y-2 overflow-y-auto max-h-[300px] pr-1 custom-scrollbar">
+            <div className="space-y-1 overflow-y-auto max-h-[300px] pr-1 custom-scrollbar overflow-x-hidden">
               {recent.map((tx) => (
-                <div
+                <SwipeableTransaction
                   key={tx.id}
-                  className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-black/5 dark:hover:bg-muted/40 transition-colors"
-                >
-                  <div
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0 ${tx.type === "income" ? "bg-income/12" : "bg-spending/12"}`}
-                  >
-                    {tx.type === "income" ? (
-                      <TrendingUp size={13} className="text-income" />
-                    ) : (
-                      <TrendingDown size={13} className="text-spending" />
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p
-                      className="text-foreground truncate"
-                      style={{ fontSize: "0.85rem", fontWeight: 500 }}
-                    >
-                      {tx.reason || tx.category}
-                    </p>
-                    <p
-                      className="text-muted-foreground flex gap-2"
-                      style={{ fontSize: "0.72rem" }}
-                    >
-                      <span className="text-purple-500 dark:text-purple-400">
-                        {tx.category}
-                      </span>
-                      <span>•</span>
-                      <span>{new Date(tx.date).toLocaleDateString()}</span>
-                    </p>
-                  </div>
-                  <span
-                    className={`flex-shrink-0 ${tx.type === "income" ? "text-income" : "text-spending"}`}
-                    style={{ fontSize: "0.88rem", fontWeight: 700 }}
-                  >
-                    {tx.type === "income" ? "+" : "-"}
-                    {fmt(tx.amount)}
-                  </span>
-                </div>
+                  tx={tx}
+                  onDelete={handleDeleteTx}
+                />
               ))}
             </div>
           )}
@@ -714,7 +788,6 @@ export function DashboardPage() {
         defaultType={modalType}
       />
 
-      {/* Плавающая кнопка (FAB) - Сверхплавная анимация (iOS style) */}
       <button
         onClick={() =>
           modalOpen ? setModalOpen(false) : openModal("spending")
