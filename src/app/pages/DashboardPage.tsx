@@ -312,13 +312,18 @@ export function DashboardPage() {
     setAiLoading(true);
     try {
       const token = localStorage.getItem("access");
-      const res = await fetch("https://finance.lxv.uz/api/ai-tips/", {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+      const res = await fetch(
+        `https://finance.lxv.uz/api/ai-tips/?lang=${language}`,
+        {
+          // Добавили ?lang=
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            "Accept-Language": language, // И в заголовки на всякий случай
+          },
         },
-      });
+      );
       const data = await res.json();
       if (res.ok && data.tip) setAiText(data.tip);
       else setAiText(data.error || "Ошибка получения совета.");
