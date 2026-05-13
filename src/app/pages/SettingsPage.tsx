@@ -10,6 +10,7 @@ import {
   X,
   Save,
   Lock,
+  ChevronDown, // <-- Добавили иконку стрелочки
 } from "lucide-react";
 import { useApp } from "../contexts/AppContext";
 import { useT } from "../i18n/translations";
@@ -26,6 +27,9 @@ export function SettingsPage() {
     deleteAllTransactions,
   } = useApp();
   const t = useT(language);
+
+  // Стейт для выпадающего списка языков
+  const [isLangOpen, setIsLangOpen] = useState(false);
 
   // Стейты для Опасной зоны
   const [showDanger, setShowDanger] = useState(false);
@@ -94,6 +98,21 @@ export function SettingsPage() {
   const sectionHead =
     "px-5 py-3.5 border-b border-white/20 dark:border-border flex items-center justify-between";
 
+  // Массив доступных языков
+  const LANGS = [
+    { code: "en", label: t("lang_en") || "English" },
+    { code: "ru", label: t("lang_ru") || "Русский" },
+    { code: "uzb", label: t("lang_uzb") || "O'zbek" },
+    { code: "kk", label: t("lang_kk") || "Қазақша" },
+    { code: "ky", label: t("lang_ky") || "Кыргызча" },
+    { code: "de", label: t("lang_de") || "Deutsch" },
+    { code: "lb", label: t("lang_lb") || "Lëtzebuergesch" },
+  ];
+
+  // Ищем лейбл для текущего выбранного языка
+  const currentLangLabel =
+    LANGS.find((l) => l.code === language)?.label || "Language";
+
   return (
     <div className="p-4 lg:p-6 2xl:p-10 max-w-xl 2xl:max-w-2xl space-y-5">
       <h1
@@ -103,7 +122,7 @@ export function SettingsPage() {
         {t("settingsTitle") || "Настройки"}
       </h1>
 
-      {/* ── Profile (С возможностью редактирования) ─────────────────────────────────── */}
+      {/* ── Profile ─────────────────────────────────── */}
       <section className={cardCls}>
         <div className={sectionHead}>
           <div className="flex items-center gap-2">
@@ -141,7 +160,6 @@ export function SettingsPage() {
 
         <div className="p-5">
           {!isEditingProfile ? (
-            // Режим просмотра
             <div className="flex items-center gap-4">
               <div
                 className="w-[72px] h-[72px] rounded-2xl bg-primary/15 border-2 border-primary/25 flex items-center justify-center shadow-lg flex-shrink-0"
@@ -165,7 +183,6 @@ export function SettingsPage() {
               </div>
             </div>
           ) : (
-            // Режим редактирования
             <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -191,7 +208,6 @@ export function SettingsPage() {
                   />
                 </div>
               </div>
-
               <div className="space-y-1">
                 <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1">
                   {t("emailLabel") || "Email"}
@@ -203,7 +219,6 @@ export function SettingsPage() {
                   className="w-full px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white focus:ring-2 focus:ring-primary/50 outline-none transition-all text-sm"
                 />
               </div>
-
               <div className="space-y-1 pt-2 border-t border-white/10">
                 <label className="text-gray-500 text-[10px] uppercase tracking-widest ml-1 flex items-center gap-1">
                   <Lock size={10} />{" "}
@@ -218,7 +233,6 @@ export function SettingsPage() {
                   className="w-full px-3 py-2 rounded-xl bg-black/20 border border-white/10 text-white focus:ring-2 focus:ring-primary/50 outline-none transition-all text-sm"
                 />
               </div>
-
               <button
                 onClick={handleUpdateProfile}
                 disabled={isSaving}
@@ -309,35 +323,57 @@ export function SettingsPage() {
             </h2>
           </div>
         </div>
-        <div className="p-5">
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {[
-              { code: "en", label: t("lang_en") || "English" },
-              { code: "ru", label: t("lang_ru") || "Русский" },
-              { code: "uzb", label: t("lang_uzb") || "O'zbek" },
-              { code: "kk", label: t("lang_kk") || "Қазақша" },
-              { code: "ky", label: t("lang_ky") || "Кыргызча" },
-              { code: "de", label: t("lang_de") || "Deutsch" },
-              { code: "lb", label: t("lang_lb") || "Lëtzebuergesch" },
-            ].map((lang) => (
-              <button
-                key={lang.code}
-                onClick={() => setLanguage(lang.code)}
-                className={`px-4 py-3 rounded-2xl text-sm font-semibold transition-all border ${
-                  language === lang.code
-                    ? "bg-primary/15 border-primary/50 text-primary shadow-sm"
-                    : "bg-black/5 dark:bg-white/5 border-transparent text-gray-500 dark:text-gray-400 hover:bg-black/10 dark:hover:bg-white/10"
-                }`}
-              >
-                {lang.label}
-              </button>
-            ))}
+        <div className="p-5 relative z-20">
+          {" "}
+          {/* z-20 важно, чтобы меню не уходило под Опасную зону */}
+          {/* Кастомный Select */}
+          <div className="relative">
+            <button
+              onClick={() => setIsLangOpen(!isLangOpen)}
+              className="w-full px-4 py-3.5 rounded-2xl bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white flex items-center justify-between hover:bg-black/10 dark:hover:bg-white/10 transition-all font-semibold focus:ring-2 focus:ring-purple-500/50 outline-none"
+            >
+              <span>{currentLangLabel}</span>
+              <ChevronDown
+                size={18}
+                className={`text-gray-400 transition-transform duration-200 ${isLangOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {/* Выпадающее меню */}
+            {isLangOpen && (
+              <>
+                {/* Невидимая подложка для закрытия по клику вне меню */}
+                <div
+                  className="fixed inset-0 z-30"
+                  onClick={() => setIsLangOpen(false)}
+                />
+
+                <div className="absolute left-0 right-0 top-full mt-2 bg-white/95 dark:bg-[#1a1a1a]/95 backdrop-blur-xl border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl z-40 max-h-60 overflow-y-auto custom-scrollbar p-1.5 animate-in fade-in slide-in-from-top-2 duration-200">
+                  {LANGS.map((lang) => (
+                    <button
+                      key={lang.code}
+                      onClick={() => {
+                        setLanguage(lang.code);
+                        setIsLangOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                        language === lang.code
+                          ? "bg-purple-500/15 text-purple-600 dark:text-purple-400"
+                          : "text-gray-900 dark:text-white hover:bg-black/5 dark:hover:bg-white/5"
+                      }`}
+                    >
+                      {lang.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
       </section>
 
       {/* ── Danger Zone ──────────────────────────── */}
-      <div className="mt-8 liquid-glass rounded-3xl p-6 sm:p-8 border border-red-500/20 bg-red-500/5">
+      <div className="mt-8 liquid-glass rounded-3xl p-6 sm:p-8 border border-red-500/20 bg-red-500/5 relative z-10">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
             <Trash2 className="text-red-500" size={20} />
