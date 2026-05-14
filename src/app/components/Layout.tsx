@@ -12,6 +12,15 @@ import { useApp } from "../contexts/AppContext";
 import { useT } from "../i18n/translations";
 import { TopographyBackground } from "./TopographyBackground";
 import logo from "../../imports/lxvbrowser.png";
+import {
+  LayoutDashboard,
+  Settings,
+  BarChart3,
+  LogOut,
+  Menu,
+  X,
+  Bot,
+} from "lucide-react";
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { currentUser, logout, language } = useApp();
@@ -26,6 +35,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { to: "/dashboard", icon: LayoutDashboard, label: t("dashboard") },
+    { to: "/ai-chat", icon: Bot, label: t("aiChat") || "AI Чат" },
     { to: "/management", icon: BarChart3, label: t("management") },
     { to: "/settings", icon: Settings, label: t("settings") },
   ];

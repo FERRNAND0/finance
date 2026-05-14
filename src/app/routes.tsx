@@ -5,6 +5,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { ManagementPage } from './pages/ManagementPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { Layout } from './components/Layout';
+
 import { useApp } from './contexts/AppContext';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {

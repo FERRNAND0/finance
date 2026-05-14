@@ -216,3 +216,50 @@ class PiggyBankView(generics.RetrieveUpdateAPIView):
         obj, created = PiggyBank.objects.get_or_create(user=self.request.user)
         return obj
         
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import permissions
+from django.conf import settings
+from openai import OpenAI
+
+class AIChatView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        user_message = request.data.get('message', '')
+        language = request.data.get('language', 'ru')
+
+        if not getattr(settings, 'OPENAI_API_KEY', None):
+            return Response({"error": "OpenAI API Key is not configured"}, status=500)
+
+        if not user_message:
+            return Response({"error": "Message is required"}, status=400)
+
+        # Контекст для ИИ, чтобы он понимал, кто он
+        system_prompt = f"""
+        You are a highly intelligent and polite personal financial assistant integrated into the 'S&F' (System & Finance) app.
+        Your goal is to help the user manage their money, give budgeting advice, and answer financial questions.
+        Be concise, friendly, and structure your text beautifully (use emojis and bullet points if needed).
+        IMPORTANT: You must reply entirely in the language code provided: '{language}'.
+        """
+
+        try:
+            client = OpenAI(api_key=settings.OPENAI_API_KEY)
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message}
+                ],
+                max_tokens=400,
+                temperature=0.7
+            )
+            
+            ai_reply = response.choices[0].message.content
+            return Response({"reply": ai_reply})
+            
+        except Exception as e:
+            print(f"OpenAI Chat Error: {e}")
+            return Response({"error": "Failed to connect to AI"}, status=500)
