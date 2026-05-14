@@ -34,7 +34,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const initials = `${fName[0] || ""}${lName[0] || ""}`.toUpperCase() || "SF";
 
   return (
-    <div className="min-h-screen flex bg-background relative">
+    // ИСПРАВЛЕНИЕ ЗДЕСЬ: bg-background заменен на bg-transparent
+    <div className="min-h-screen flex bg-transparent relative">
       {/* Global topography background */}
       <TopographyBackground />
 
@@ -238,7 +239,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </nav>
 
       {/* ── Main Content ─────────────────────────────── */}
-      <main className="flex-1 lg:ml-60 2xl:ml-72 pt-[52px] lg:pt-0 pb-16 lg:pb-0 min-h-screen overflow-x-hidden relative z-10">
+      <main className="flex-1 lg:ml-60 2xl:ml-72 pt-[52px] lg:pt-0 pb-16 lg:pb-0 min-h-screen overflow-x-hidden relative z-10 bg-transparent">
         <div className="max-w-screen-2xl mx-auto">{children}</div>
       </main>
     </div>
