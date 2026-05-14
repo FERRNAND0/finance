@@ -1,12 +1,13 @@
-import { createBrowserRouter, Navigate } from 'react-router';
-import { AuthPage } from './pages/AuthPage';
-import { TwoFactorPage } from './pages/TwoFactorPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { ManagementPage } from './pages/ManagementPage';
-import { SettingsPage } from './pages/SettingsPage';
-import { Layout } from './components/Layout';
+import { createBrowserRouter, Navigate } from "react-router";
+import { AuthPage } from "./pages/AuthPage";
+import { TwoFactorPage } from "./pages/TwoFactorPage";
+import { DashboardPage } from "./pages/DashboardPage";
+import { ManagementPage } from "./pages/ManagementPage";
+import { SettingsPage } from "./pages/SettingsPage";
+import { AIChatPage } from "./pages/AIChatPage"; // <-- ИМПОРТИРОВАЛИ СТРАНИЦУ ЧАТА
+import { Layout } from "./components/Layout";
 
-import { useApp } from './contexts/AppContext';
+import { useApp } from "./contexts/AppContext";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { currentUser } = useApp();
@@ -26,19 +27,17 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
 function VerifyGuard({ children }: { children: React.ReactNode }) {
   const { currentUser } = useApp();
-  // Убрали старую проверку pendingVerification.
-  // Теперь страница 2FA сама проверяет, передали ли ей email.
   if (currentUser) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
 
 export const router = createBrowserRouter([
   {
-    path: '/',
+    path: "/",
     element: <Navigate to="/dashboard" replace />,
   },
   {
-    path: '/auth',
+    path: "/auth",
     element: (
       <AuthGuard>
         <AuthPage />
@@ -46,7 +45,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/auth/verify',
+    path: "/auth/verify",
     element: (
       <VerifyGuard>
         <TwoFactorPage />
@@ -54,7 +53,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/dashboard',
+    path: "/dashboard",
     element: (
       <ProtectedRoute>
         <DashboardPage />
@@ -62,7 +61,7 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/management',
+    path: "/management",
     element: (
       <ProtectedRoute>
         <ManagementPage />
@@ -70,15 +69,24 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: '/settings',
+    path: "/settings",
     element: (
       <ProtectedRoute>
         <SettingsPage />
       </ProtectedRoute>
     ),
   },
+  // НОВЫЙ МАРШРУТ ДЛЯ ИИ-ЧАТА 🤖
   {
-    path: '*',
+    path: "/ai-chat",
+    element: (
+      <ProtectedRoute>
+        <AIChatPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "*",
     element: <Navigate to="/dashboard" replace />,
   },
 ]);
