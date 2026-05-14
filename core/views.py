@@ -224,6 +224,14 @@ from rest_framework import permissions
 from django.conf import settings
 from openai import OpenAI
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import permissions
+from django.conf import settings
+from openai import OpenAI
+import json
+from .models import Transaction
+
 class AIChatView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -237,12 +245,40 @@ class AIChatView(APIView):
         if not user_message:
             return Response({"error": "Message is required"}, status=400)
 
-        # Контекст для ИИ, чтобы он понимал, кто он
+        # 1. СОБИРАЕМ ДАННЫЕ ПОЛЬЗОВАТЕЛЯ
+        transactions = Transaction.objects.filter(user=request.user)
+        total_income = sum(float(t.amount) for t in transactions if t.type == 'income')
+        total_spending = sum(float(t.amount) for t in transactions if t.type == 'spending')
+        balance = total_income - total_spending
+
+        # Группируем расходы по категориям
+        spending_cats = {}
+        for t in transactions.filter(type='spending'):
+            spending_cats[t.category] = spending_cats.get(t.category, 0) + float(t.amount)
+
+        financial_context = f"""
+        [USER FINANCIAL DATA]
+        - Current Balance: {balance:.2f}
+        - Total Income: {total_income:.2f}
+        - Total Expenses: {total_spending:.2f}
+        - Expenses by Category: {json.dumps(spending_cats, ensure_ascii=False)}
+        """
+
+        # 2. НОВЫЙ ПРОМПТ (РОЛЬ БУХГАЛТЕРА)
         system_prompt = f"""
-        You are a highly intelligent and polite personal financial assistant integrated into the 'S&F' (System & Finance) app.
-        Your goal is to help the user manage their money, give budgeting advice, and answer financial questions.
-        Be concise, friendly, and structure your text beautifully (use emojis and bullet points if needed).
-        IMPORTANT: You must reply entirely in the language code provided: '{language}'.
+        You are a highly professional, analytical, and experienced personal accountant and financial advisor.
+        You are integrated directly into the user's financial dashboard. 
+        Here is the user's real-time financial data:
+        {financial_context}
+
+        Your job is to:
+        1. Analyze this data when the user asks for advice.
+        2. Point out areas where they are spending too much.
+        3. Give concrete, actionable advice on how to optimize their budget, save money, and invest.
+        4. Be polite, objective, and use a professional tone (like a top-tier financial consultant).
+        5. Use clear formatting (bullet points, bold text for numbers).
+        
+        IMPORTANT: You MUST reply entirely in the language code provided: '{language}'.
         """
 
         try:
@@ -253,8 +289,8 @@ class AIChatView(APIView):
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message}
                 ],
-                max_tokens=400,
-                temperature=0.7
+                max_tokens=600, # Увеличили лимит токенов для развернутых ответов
+                temperature=0.5 # Сделали его менее "творческим" и более точным/серьезным
             )
             
             ai_reply = response.choices[0].message.content

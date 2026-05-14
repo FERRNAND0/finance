@@ -80,7 +80,12 @@ export const translations = {
     income: "Income",
     spending: "Spending",
     balance: "Balance",
-
+    aiChat: "AI Chat",
+    aiChatTitle: "Your AI Accountant",
+    aiChatSubtitle: "Professional financial analysis",
+    aiWelcomeMessage:
+      "Hello! I am your personal AI accountant. I have analyzed your transactions and current balance. How can I help you? Would you like some advice on optimizing your expenses?",
+    aiChatPlaceholder: "Ask me about your finances...",
     // Management
     managementTitle: "Management",
     addTransaction: "Add Transaction",
@@ -170,6 +175,12 @@ export const translations = {
   ru: {
     theme_default: "Наш фирменный",
     theme_bw: "Черно-белый",
+    aiChat: "AI Чат",
+    aiChatTitle: "Ваш AI Бухгалтер",
+    aiChatSubtitle: "Профессиональный финансовый анализ",
+    aiWelcomeMessage:
+      "Здравствуйте! Я ваш личный ИИ-бухгалтер. Я уже проанализировал ваши транзакции и текущий баланс. Чем могу помочь? Хотите получить советы по оптимизации расходов?",
+    aiChatPlaceholder: "Спросите меня о ваших финансах...",
     theme_white: "Чисто белый",
     theme_gray: "Серый графит",
     theme_sea_green: "Морской зеленый",
@@ -755,6 +766,12 @@ export const translations = {
     lang_kk: "Қазақша",
     lang_ky: "Кыргызча",
     lang_de: "Deutsch",
+    aiChat: "AI Chat",
+    aiChatTitle: "Ihr KI-Buchhalter",
+    aiChatSubtitle: "Professionelle Finanzanalyse",
+    aiWelcomeMessage:
+      "Hallo! Ich bin Ihr persönlicher KI-Buchhalter. Ich habe Ihre Transaktionen analysiert. Wie kann ich helfen? Möchten Sie Tipps zur Ausgabenoptimierung?",
+    aiChatPlaceholder: "Fragen Sie mich nach Ihren Finanzen...",
     lang_lb: "Lëtzebuergesch",
     login: "Anmelden",
     register: "Registrieren",
