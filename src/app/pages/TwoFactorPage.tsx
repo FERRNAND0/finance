@@ -12,8 +12,6 @@ export function TwoFactorPage() {
   const t = useT(language);
   const navigate = useNavigate();
   const location = useLocation();
-
-  // Получаем email, который мы передали со страницы AuthPage
   const email = location.state?.email;
 
   const [code, setCode] = useState(["", "", "", "", "", ""]);
@@ -21,11 +19,8 @@ export function TwoFactorPage() {
   const [error, setError] = useState("");
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Если вдруг кто-то зашел сюда напрямую без email, отправим его обратно на логин
   React.useEffect(() => {
-    if (!email) {
-      navigate("/auth");
-    }
+    if (!email) navigate("/auth");
   }, [email, navigate]);
 
   const handleInput = (index: number, value: string) => {
@@ -42,9 +37,8 @@ export function TwoFactorPage() {
     index: number,
     e: React.KeyboardEvent<HTMLInputElement>,
   ) => {
-    if (e.key === "Backspace" && !code[index] && index > 0) {
+    if (e.key === "Backspace" && !code[index] && index > 0)
       inputRefs.current[index - 1]?.focus();
-    }
     if (e.key === "Enter") handleVerify();
   };
 
@@ -69,35 +63,32 @@ export function TwoFactorPage() {
       setError(t("invalidCode"));
       return;
     }
-
     setLoading(true);
 
-    // Вызываем обновленную функцию из AppContext, передаем email и код
     const success = await verifyCode(email, fullCode);
 
     if (success) {
       toast.success("Успешная верификация!");
       navigate("/dashboard");
     } else {
-      setError(t("invalidCode") || "Неверный код или время истекло");
+      setError(t("invalidCode") || "Неверный код");
       setCode(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
     }
-
     setLoading(false);
   };
 
   const filled = code.filter(Boolean).length;
 
   return (
-    <div className="min-h-screen bg-[#0b000b] flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-background">
       <TopographyBackground />
 
       <div className="relative z-10 w-full flex flex-col items-center px-4 py-8 sm:py-12">
         <div className="w-full max-w-sm sm:max-w-md mb-4">
           <button
             onClick={() => navigate("/auth")}
-            className="flex items-center gap-2 text-gray-500 hover:text-white transition-colors text-sm"
+            className="flex items-center gap-2 text-gray-500 hover:text-foreground transition-colors text-sm"
           >
             <ArrowLeft size={15} />
             <span>
@@ -110,13 +101,13 @@ export function TwoFactorPage() {
           </button>
         </div>
 
-        <div className="w-full max-w-sm sm:max-w-md liquid-glass rounded-3xl shadow-2xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-2xl">
+        <div className="w-full max-w-sm sm:max-w-md liquid-glass rounded-3xl shadow-2xl overflow-hidden border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-black/20 backdrop-blur-2xl">
           <div className="h-1.5 w-full bg-gradient-to-r from-purple-500 via-fuchsia-500 to-purple-500" />
 
           <div className="p-6 sm:p-8 space-y-6 sm:space-y-7">
             <div className="flex flex-col items-center text-center gap-3">
               <div className="relative">
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl liquid-glass flex items-center justify-center shadow-lg bg-white/10 border border-white/20">
+                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl liquid-glass flex items-center justify-center shadow-lg bg-black/5 dark:bg-white/10 border border-gray-200 dark:border-white/20">
                   <img
                     src={logo}
                     alt="S&F"
@@ -128,15 +119,17 @@ export function TwoFactorPage() {
                 </div>
               </div>
               <div>
-                <h1 className="text-white text-xl font-bold">
+                <h1 className="text-foreground text-xl font-bold">
                   {t("twoFactorTitle")}
                 </h1>
-                <p className="text-gray-400 mt-1 text-sm">
+                <p className="text-muted-foreground mt-1 text-sm">
                   {t("twoFactorSubtitle")}
                 </p>
                 <div className="flex items-center justify-center gap-1.5 mt-2">
-                  <Mail size={13} className="text-purple-400" />
-                  <p className="text-purple-400 text-sm font-medium">{email}</p>
+                  <Mail size={13} className="text-purple-500" />
+                  <p className="text-purple-600 dark:text-purple-400 text-sm font-medium">
+                    {email}
+                  </p>
                 </div>
               </div>
             </div>
@@ -158,12 +151,12 @@ export function TwoFactorPage() {
                     value={digit}
                     onChange={(e) => handleInput(i, e.target.value)}
                     onKeyDown={(e) => handleKeyDown(i, e)}
-                    className={`text-center rounded-xl border-2 bg-white/5 text-white focus:outline-none transition-all duration-200 w-10 h-12 sm:w-12 sm:h-14 text-xl font-bold ${
+                    className={`text-center rounded-xl border-2 bg-black/5 dark:bg-white/5 text-foreground focus:outline-none transition-all duration-200 w-10 h-12 sm:w-12 sm:h-14 text-xl font-bold ${
                       digit
                         ? "border-purple-500 bg-purple-500/10 shadow-[0_0_10px_rgba(168,85,247,0.2)]"
                         : error
                           ? "border-red-500/70"
-                          : "border-white/10 focus:border-purple-500/50"
+                          : "border-gray-200 dark:border-white/10 focus:border-purple-500/50"
                     }`}
                   />
                 ))}
@@ -171,7 +164,7 @@ export function TwoFactorPage() {
             </div>
 
             {error && (
-              <p className="text-center text-red-400 text-sm">{error}</p>
+              <p className="text-center text-red-500 text-sm">{error}</p>
             )}
 
             <button

@@ -175,7 +175,7 @@ export function TransactionModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/20 dark:bg-background/80 backdrop-blur-sm">
       <div
-        className="liquid-glass w-full max-w-md rounded-3xl shadow-2xl border border-gray-200 dark:border-white/10 bg-white/95 dark:bg-[#0b000b]/90 relative overflow-hidden"
+        className="liquid-glass w-full max-w-md rounded-3xl shadow-2xl border border-gray-200 dark:border-white/10 bg-white/95 backgroundColor: 'var(--background)'/90 relative overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div

@@ -7,7 +7,6 @@ import { toast } from "sonner";
 import logo from "../../imports/lxvbrowser.png";
 import { TopographyBackground } from "../components/TopographyBackground";
 
-// 1. Исправляем TypeScript: заменяем 'any' на строгий интерфейс
 interface InputGroupProps {
   label: string;
   value: string;
@@ -57,13 +56,12 @@ export function AuthPage() {
         : { email, password, first_name: firstName, last_name: lastName };
 
     try {
-        const response = await fetch(`https://finance.lxv.uz${endpoint}`, {
+      const response = await fetch(`https://finance.lxv.uz${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
 
-      // 2. Безопасный парсинг ответа (защита от краша, если сервер вернет HTML-ошибку 500)
       let data;
       try {
         data = await response.json();
@@ -72,31 +70,24 @@ export function AuthPage() {
       }
 
       if (response.ok) {
- if (mode === "login") {
+        if (mode === "login") {
           localStorage.setItem("access", data.access);
           localStorage.setItem("refresh", data.refresh);
-          
-          // Сохраняем данные пользователя
+
           const mappedUser = {
             ...data.user,
-            firstName: data.user?.first_name || '',
-            lastName: data.user?.last_name || '',
+            firstName: data.user?.first_name || "",
+            lastName: data.user?.last_name || "",
           };
           localStorage.setItem("sf_user", JSON.stringify(mappedUser));
 
           toast.success(t("loginSuccess") || "Успешный вход!");
-          // Используем window.location.href для жесткой перезагрузки,
-          // чтобы AppContext гарантированно подхватил новые данные
           window.location.href = "/dashboard";
-        }else {
-          toast.success(
-            t("registerSuccess") || "Код отправлен в терминал Django!",
-          );
+        } else {
+          toast.success(t("registerSuccess") || "Код отправлен на почту!");
           navigate("/auth/verify", { state: { email } });
         }
       } else {
-        // 3. Более подробный и точный вывод ошибок
-        console.error("Django Error:", data);
         if (data.email)
           toast.error("Этот Email уже зарегистрирован или введен неверно");
         else if (data.password)
@@ -107,7 +98,6 @@ export function AuthPage() {
           );
       }
     } catch (error) {
-      console.error("Network Error:", error);
       toast.error("Нет связи с сервером. Проверь, запущен ли Django.");
     } finally {
       setLoading(false);
@@ -124,7 +114,7 @@ export function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center relative overflow-hidden bg-[#0b000b]">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden bg-background">
       <TopographyBackground />
 
       <div className="relative z-10 w-full flex flex-col items-center px-4 py-8 sm:py-12">
@@ -134,28 +124,24 @@ export function AuthPage() {
               <img src={logo} alt="S&F" className="w-12 h-12 object-contain" />
             </div>
           </div>
-          <h1 className="text-white text-3xl font-extrabold tracking-tight">
+          <h1 className="text-foreground text-3xl font-extrabold tracking-tight">
             {t("appName")}
           </h1>
-          <p className="text-gray-400 mt-1 text-sm tracking-widest uppercase">
+          <p className="text-muted-foreground mt-1 text-sm tracking-widest uppercase">
             {t("appSubtitle")}
           </p>
         </div>
 
-        <div className="w-full max-w-sm sm:max-w-md liquid-glass rounded-3xl shadow-2xl overflow-hidden border border-white/10 bg-white/5 backdrop-blur-2xl">
+        <div className="w-full max-w-sm sm:max-w-md liquid-glass rounded-3xl shadow-2xl overflow-hidden border border-gray-200 dark:border-white/10 bg-white/50 dark:bg-black/20 backdrop-blur-2xl">
           <div className="h-1.5 w-full bg-gradient-to-r from-purple-500 via-fuchsia-500 to-purple-500" />
 
-          <div className="flex border-b border-white/10">
+          <div className="flex border-b border-gray-200 dark:border-white/10">
             {(["login", "register"] as const).map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => setMode(m)}
-                className={`flex-1 py-4 text-center transition-all duration-300 ${
-                  mode === m
-                    ? "text-purple-400 border-b-2 border-purple-500 bg-white/5"
-                    : "text-gray-500 hover:text-gray-300"
-                }`}
+                className={`flex-1 py-4 text-center transition-all duration-300 ${mode === m ? "text-purple-600 dark:text-purple-400 border-b-2 border-purple-500 bg-black/5 dark:bg-white/5" : "text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"}`}
               >
                 {m === "login" ? t("login") : t("register")}
               </button>
@@ -200,12 +186,12 @@ export function AuthPage() {
                   type={showPassword ? "text" : "password"}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white focus:ring-2 focus:ring-purple-500/50 outline-none transition-all"
+                  className="w-full px-4 py-3 rounded-2xl bg-black/5 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-foreground focus:ring-2 focus:ring-purple-500/50 outline-none transition-all"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                 >
                   {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -230,10 +216,10 @@ export function AuthPage() {
           <div className="p-6 pt-0 text-center">
             <button
               onClick={switchMode}
-              className="text-xs text-gray-500 hover:text-purple-400 transition-colors"
+              className="text-xs text-gray-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors"
             >
               {mode === "login" ? t("noAccount") : t("haveAccount")}{" "}
-              <span className="font-bold text-purple-500">
+              <span className="font-bold text-purple-600 dark:text-purple-500">
                 {mode === "login" ? t("signUpLink") : t("signInLink")}
               </span>
             </button>
@@ -244,7 +230,6 @@ export function AuthPage() {
   );
 }
 
-// 4. Применяем интерфейс к компоненту
 function InputGroup({
   label,
   value,
@@ -263,9 +248,7 @@ function InputGroup({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className={`w-full px-4 py-3 rounded-2xl bg-white/5 border ${
-          error ? "border-red-500/50" : "border-white/10"
-        } text-white focus:ring-2 focus:ring-purple-500/50 outline-none transition-all`}
+        className={`w-full px-4 py-3 rounded-2xl bg-black/5 dark:bg-white/5 border ${error ? "border-red-500/50" : "border-gray-200 dark:border-white/10"} text-foreground focus:ring-2 focus:ring-purple-500/50 outline-none transition-all`}
       />
       {error && <p className="text-[10px] text-red-500 ml-1">{error}</p>}
     </div>
