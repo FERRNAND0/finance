@@ -17,7 +17,7 @@ export function AIChatPage() {
       role: "ai",
       content:
         t("aiWelcomeMessage") ||
-        "Привет! Я твой личный финансовый ИИ-ассистент. Чем могу помочь сегодня?",
+        "Привет! Я твой личный финансовый ИИ-ассистент. Я уже проанализировал твои транзакции. Чем могу помочь?",
     },
   ]);
   const [input, setInput] = useState("");
@@ -69,6 +69,53 @@ export function AIChatPage() {
     }
   };
 
+  // ФУНКЦИЯ ДЛЯ КРАСИВОГО ОТОБРАЖЕНИЯ ТЕКСТА ОТ ИИ (Markdown -> HTML)
+  const formatMessage = (text: string, role: string) => {
+    return text.split("\n").map((line, i) => {
+      // Если строка пустая, делаем отступ
+      if (!line.trim()) return <div key={i} className="h-2"></div>;
+
+      // Ищем текст между **звездочками** и делаем его жирным
+      const parts = line.split(/(\*\*.*?\*\*)/g);
+
+      // Проверяем, является ли строка элементом списка (начинается с "- " или "1. ")
+      const isListItem =
+        line.trim().startsWith("-") || /^\d+\./.test(line.trim());
+
+      return (
+        <div
+          key={i}
+          className={`leading-relaxed ${isListItem ? "ml-4 sm:ml-6 mb-1 relative" : "mb-2"}`}
+        >
+          {/* Добавляем кастомный кружок для списков с тире */}
+          {line.trim().startsWith("-") && (
+            <span
+              className={`absolute -left-4 sm:-left-5 top-[0.6em] w-1.5 h-1.5 rounded-full ${role === "ai" ? "bg-purple-500" : "bg-white/70"}`}
+            />
+          )}
+
+          {parts.map((part, j) => {
+            if (part.startsWith("**") && part.endsWith("**")) {
+              return (
+                <strong
+                  key={j}
+                  className={`font-bold ${role === "ai" ? "text-purple-600 dark:text-purple-400" : "text-white"}`}
+                >
+                  {part.slice(2, -2)}
+                </strong>
+              );
+            }
+            // Убираем тире из самого текста, если мы нарисовали кружок
+            if (j === 0 && line.trim().startsWith("-")) {
+              return part.replace(/^-/, "").trimStart();
+            }
+            return part;
+          })}
+        </div>
+      );
+    });
+  };
+
   return (
     <div className="p-4 lg:p-6 2xl:p-10 h-[calc(100vh-60px)] lg:h-screen flex flex-col max-w-4xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
@@ -77,10 +124,10 @@ export function AIChatPage() {
         </div>
         <div>
           <h1 className="text-foreground text-xl font-bold">
-            {t("aiChatTitle") || "AI Ассистент"}
+            {t("aiChatTitle") || "AI Бухгалтер"}
           </h1>
           <p className="text-muted-foreground text-xs uppercase tracking-wider">
-            {t("aiChatSubtitle") || "Умный финансовый советник"}
+            {t("aiChatSubtitle") || "Профессиональный финансовый анализ"}
           </p>
         </div>
       </div>
@@ -96,7 +143,7 @@ export function AIChatPage() {
             >
               {/* Аватарка */}
               <div
-                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0 border shadow-sm ${
+                className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center flex-shrink-0 border shadow-sm mt-1 ${
                   msg.role === "user"
                     ? "bg-purple-600 border-purple-500"
                     : "bg-black/5 dark:bg-white/10 border-gray-200 dark:border-white/20"
@@ -109,24 +156,27 @@ export function AIChatPage() {
                 )}
               </div>
 
-              {/* Пузырь сообщения */}
+              {/* Пузырь сообщения (Шире для ИИ, чтобы текст легко читался) */}
               <div
-                className={`max-w-[80%] sm:max-w-[70%] rounded-2xl p-4 text-sm sm:text-base shadow-md ${
+                className={`max-w-[85%] sm:max-w-[80%] rounded-2xl p-4 sm:p-5 text-sm sm:text-base shadow-md ${
                   msg.role === "user"
                     ? "bg-purple-600 text-white rounded-tr-sm"
                     : "bg-white/80 dark:bg-black/40 text-gray-900 dark:text-white border border-gray-200 dark:border-white/10 rounded-tl-sm backdrop-blur-md"
                 }`}
               >
-                {msg.content}
+                {/* ВЫЗЫВАЕМ НАШУ НОВУЮ ФУНКЦИЮ ЗДЕСЬ */}
+                {formatMessage(msg.content, msg.role)}
               </div>
             </div>
           ))}
+
+          {/* Индикатор загрузки */}
           {isLoading && (
             <div className="flex gap-4 flex-row">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-black/5 dark:bg-white/10 flex items-center justify-center border border-gray-200 dark:border-white/20">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-black/5 dark:bg-white/10 flex items-center justify-center border border-gray-200 dark:border-white/20 mt-1">
                 <Loader2 size={18} className="text-foreground animate-spin" />
               </div>
-              <div className="bg-white/80 dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-2xl rounded-tl-sm p-4 backdrop-blur-md flex items-center gap-1">
+              <div className="bg-white/80 dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-2xl rounded-tl-sm p-5 backdrop-blur-md flex items-center gap-1.5 h-[52px]">
                 <span
                   className="w-2 h-2 rounded-full bg-purple-500 animate-bounce"
                   style={{ animationDelay: "0ms" }}
