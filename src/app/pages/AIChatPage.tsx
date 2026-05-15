@@ -191,7 +191,7 @@ export function AIChatPage() {
             return (
               <strong
                 key={j}
-                className={`font-semibold ${role === "ai" ? "text-white dark:text-white" : "text-white"}`}
+                className={`font-semibold ${role === "ai" ? "text-gray-900 dark:text-white" : "text-white"}`}
               >
                 {part.slice(2, -2)}
               </strong>
@@ -208,7 +208,7 @@ export function AIChatPage() {
         return (
           <div
             key={i}
-            className={`mt-4 mb-2 font-bold text-base sm:text-lg ${role === "ai" ? "text-white" : "text-white"}`}
+            className={`mt-4 mb-2 font-bold text-base sm:text-lg ${role === "ai" ? "text-gray-900 dark:text-white" : "text-white"}`}
           >
             {renderText(trimmedLine)}
           </div>
@@ -219,9 +219,11 @@ export function AIChatPage() {
         const cleanLine = trimmedLine.replace(/^[-*]\s+/, "");
         return (
           <div key={i} className="flex gap-3 my-2.5 ml-2 sm:ml-4">
-            <span className="mt-[0.45rem] w-1.5 h-1.5 rounded-full bg-purple-400 flex-shrink-0 shadow-[0_0_8px_rgba(192,132,252,0.5)]" />
+            <span
+              className={`mt-[0.45rem] w-1.5 h-1.5 rounded-full flex-shrink-0 ${role === "ai" ? "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" : "bg-white/70"}`}
+            />
             <div
-              className={`leading-relaxed ${role === "ai" ? "text-gray-200" : "text-white"}`}
+              className={`leading-relaxed ${role === "ai" ? "text-gray-800 dark:text-gray-200" : "text-white"}`}
             >
               {renderText(cleanLine)}
             </div>
@@ -232,7 +234,7 @@ export function AIChatPage() {
       return (
         <div
           key={i}
-          className={`leading-relaxed mb-2 ${role === "ai" ? "text-gray-300" : "text-white"}`}
+          className={`leading-relaxed mb-2 ${role === "ai" ? "text-gray-800 dark:text-gray-300" : "text-white"}`}
         >
           {renderText(trimmedLine)}
         </div>
@@ -252,9 +254,8 @@ export function AIChatPage() {
       )}
 
       {/* ── Боковое меню с историей ── */}
-      {/* Возвращаем absolute, убираем bg-background, возвращаем обычный отступ p-4 */}
       <div
-        className={`absolute lg:relative inset-y-0 left-0 z-40 lg:z-auto w-[85%] sm:w-72 lg:w-1/4 xl:w-1/5 flex flex-col liquid-glass bg-[#0b000b]/95 dark:bg-background/95 lg:bg-transparent backdrop-blur-xl border-r lg:border lg:rounded-3xl border-gray-200 dark:border-white/10 shadow-2xl transform transition-transform duration-300 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
+        className={`absolute lg:relative inset-y-0 left-0 z-40 lg:z-auto w-[85%] sm:w-72 lg:w-1/4 xl:w-1/5 flex flex-col liquid-glass bg-white/95 dark:bg-[#1a1a1a]/95 lg:bg-transparent dark:lg:bg-transparent backdrop-blur-xl border-r lg:border lg:rounded-3xl border-gray-200 dark:border-white/10 shadow-2xl transform transition-transform duration-300 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
       >
         <div className="p-4 border-b border-gray-200 dark:border-white/10 flex justify-between items-center">
           <button
