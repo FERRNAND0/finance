@@ -231,6 +231,13 @@ from django.conf import settings
 from openai import OpenAI
 import json
 from .models import Transaction
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import permissions
+from django.conf import settings
+from openai import OpenAI
+import json
+from .models import Transaction
 
 class AIChatView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -245,13 +252,12 @@ class AIChatView(APIView):
         if not user_message:
             return Response({"error": "Message is required"}, status=400)
 
-        # 1. СОБИРАЕМ ДАННЫЕ ПОЛЬЗОВАТЕЛЯ
+        # СОБИРАЕМ ДАННЫЕ ПОЛЬЗОВАТЕЛЯ
         transactions = Transaction.objects.filter(user=request.user)
         total_income = sum(float(t.amount) for t in transactions if t.type == 'income')
         total_spending = sum(float(t.amount) for t in transactions if t.type == 'spending')
         balance = total_income - total_spending
 
-        # Группируем расходы по категориям
         spending_cats = {}
         for t in transactions.filter(type='spending'):
             spending_cats[t.category] = spending_cats.get(t.category, 0) + float(t.amount)
@@ -264,21 +270,21 @@ class AIChatView(APIView):
         - Expenses by Category: {json.dumps(spending_cats, ensure_ascii=False)}
         """
 
-        # 2. НОВЫЙ ПРОМПТ (РОЛЬ БУХГАЛТЕРА)
+        # НОВЫЙ ЖЕСТКИЙ ПРОМПТ
         system_prompt = f"""
-        You are a highly professional, analytical, and experienced personal accountant and financial advisor.
-        You are integrated directly into the user's financial dashboard. 
+        You are a highly professional, analytical personal accountant and financial advisor.
         Here is the user's real-time financial data:
         {financial_context}
 
-        Your job is to:
-        1. Analyze this data when the user asks for advice.
-        2. Point out areas where they are spending too much.
-        3. Give concrete, actionable advice on how to optimize their budget, save money, and invest.
-        4. Be polite, objective, and use a professional tone (like a top-tier financial consultant).
-        5. Use clear formatting (bullet points, bold text for numbers).
-        
-        IMPORTANT: You MUST reply entirely in the language code provided: '{language}'.
+        CRITICAL FORMATTING RULES (YOU MUST FOLLOW THESE STRICTLY):
+        1. NEVER write long, solid blocks of text.
+        2. Structure your response step-by-step like a professional financial plan.
+        3. Use numbered headings for main points (e.g., "1. Определение сроков").
+        4. Use bullet points with bold prefixes for breakdowns (e.g., "- **50% — На машину:** описание").
+        5. Always leave an empty line between different paragraphs or sections.
+        6. Be concise, highly structured, and easy to read.
+
+        IMPORTANT: Reply entirely in the language code provided: '{language}'.
         """
 
         try:
@@ -289,8 +295,8 @@ class AIChatView(APIView):
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": user_message}
                 ],
-                max_tokens=600, # Увеличили лимит токенов для развернутых ответов
-                temperature=0.5 # Сделали его менее "творческим" и более точным/серьезным
+                max_tokens=700,
+                temperature=0.4 # Делаем его более логичным и структурным
             )
             
             ai_reply = response.choices[0].message.content

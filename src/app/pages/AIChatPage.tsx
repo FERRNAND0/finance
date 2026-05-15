@@ -70,52 +70,73 @@ export function AIChatPage() {
   };
 
   // ФУНКЦИЯ ДЛЯ КРАСИВОГО ОТОБРАЖЕНИЯ ТЕКСТА ОТ ИИ (Markdown -> HTML)
+  // ФУНКЦИЯ ДЛЯ ИДЕАЛЬНОГО ОТОБРАЖЕНИЯ СТРУКТУРЫ (Заголовки, списки, абзацы)
   const formatMessage = (text: string, role: string) => {
     return text.split("\n").map((line, i) => {
-      // Если строка пустая, делаем отступ
-      if (!line.trim()) return <div key={i} className="h-2"></div>;
+      const trimmedLine = line.trim();
 
-      // Ищем текст между **звездочками** и делаем его жирным
-      const parts = line.split(/(\*\*.*?\*\*)/g);
+      // 1. Пустые строки превращаем в четкие отступы
+      if (!trimmedLine) return <div key={i} className="h-3 sm:h-4"></div>;
 
-      // Проверяем, является ли строка элементом списка (начинается с "- " или "1. ")
-      const isListItem =
-        line.trim().startsWith("-") || /^\d+\./.test(line.trim());
+      // Вспомогательная функция для выделения жирного текста
+      const renderText = (str: string) => {
+        const parts = str.split(/(\*\*.*?\*\*)/g);
+        return parts.map((part, j) => {
+          if (part.startsWith("**") && part.endsWith("**")) {
+            return (
+              <strong
+                key={j}
+                className={`font-semibold ${role === "ai" ? "text-white dark:text-white" : "text-white"}`}
+              >
+                {part.slice(2, -2)}
+              </strong>
+            );
+          }
+          return part;
+        });
+      };
 
+      // 2. Если это нумерованный заголовок (например: "1. Заголовок")
+      if (
+        /^\d+\.\s+\*\*/.test(trimmedLine) ||
+        /^\d+\.\s+[A-ZА-Я]/.test(trimmedLine)
+      ) {
+        return (
+          <div
+            key={i}
+            className={`mt-4 mb-2 font-bold text-base sm:text-lg ${role === "ai" ? "text-white" : "text-white"}`}
+          >
+            {renderText(trimmedLine)}
+          </div>
+        );
+      }
+
+      // 3. Если это элемент списка с точкой/тире (например: "- **50%** — текст")
+      if (trimmedLine.startsWith("-") || trimmedLine.startsWith("*")) {
+        const cleanLine = trimmedLine.replace(/^[-*]\s+/, ""); // Убираем само тире
+        return (
+          <div key={i} className="flex gap-3 my-2.5 ml-2 sm:ml-4">
+            <span className="mt-[0.45rem] w-1.5 h-1.5 rounded-full bg-purple-400 flex-shrink-0 shadow-[0_0_8px_rgba(192,132,252,0.5)]" />
+            <div
+              className={`leading-relaxed ${role === "ai" ? "text-gray-200" : "text-white"}`}
+            >
+              {renderText(cleanLine)}
+            </div>
+          </div>
+        );
+      }
+
+      // 4. Обычный абзац текста
       return (
         <div
           key={i}
-          className={`leading-relaxed ${isListItem ? "ml-4 sm:ml-6 mb-1 relative" : "mb-2"}`}
+          className={`leading-relaxed mb-2 ${role === "ai" ? "text-gray-300" : "text-white"}`}
         >
-          {/* Добавляем кастомный кружок для списков с тире */}
-          {line.trim().startsWith("-") && (
-            <span
-              className={`absolute -left-4 sm:-left-5 top-[0.6em] w-1.5 h-1.5 rounded-full ${role === "ai" ? "bg-purple-500" : "bg-white/70"}`}
-            />
-          )}
-
-          {parts.map((part, j) => {
-            if (part.startsWith("**") && part.endsWith("**")) {
-              return (
-                <strong
-                  key={j}
-                  className={`font-bold ${role === "ai" ? "text-purple-600 dark:text-purple-400" : "text-white"}`}
-                >
-                  {part.slice(2, -2)}
-                </strong>
-              );
-            }
-            // Убираем тире из самого текста, если мы нарисовали кружок
-            if (j === 0 && line.trim().startsWith("-")) {
-              return part.replace(/^-/, "").trimStart();
-            }
-            return part;
-          })}
+          {renderText(trimmedLine)}
         </div>
       );
     });
   };
-
   return (
     <div className="p-4 lg:p-6 2xl:p-10 h-[calc(100vh-60px)] lg:h-screen flex flex-col max-w-4xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
