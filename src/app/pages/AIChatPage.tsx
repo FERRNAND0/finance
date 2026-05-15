@@ -241,21 +241,21 @@ export function AIChatPage() {
       );
     });
   };
-
   return (
     <div className="p-0 lg:p-6 2xl:p-10 h-[calc(100vh-116px)] lg:h-[calc(100vh-40px)] flex gap-0 lg:gap-6 max-w-7xl mx-auto relative overflow-hidden">
-      {/* ── Затемнение фона на мобилках ── */}
-      {/* Используем absolute и z-30, чтобы затемнять только зону чата */}
-      {isSidebarOpen && (
-        <div
-          className="absolute inset-0 bg-black/60 z-30 lg:hidden backdrop-blur-sm"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      {/* ── Боковое меню с историей ── */}
+      {/* ── Затемнение фона на мобилках (ТЕПЕРЬ ПЛАВНОЕ) ── */}
+      {/* Убрали условный рендеринг, добавили transition-opacity и pointer-events-none */}
       <div
-        className={`absolute lg:relative inset-y-0 left-0 z-40 lg:z-auto w-[85%] sm:w-72 lg:w-1/4 xl:w-1/5 flex flex-col liquid-glass bg-white/95 dark:bg-[#1a1a1a]/95 lg:bg-transparent dark:lg:bg-transparent backdrop-blur-xl border-r lg:border lg:rounded-3xl border-gray-200 dark:border-white/10 shadow-2xl transform transition-transform duration-300 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
+        className={`absolute inset-0 bg-black/60 z-30 lg:hidden backdrop-blur-sm transition-opacity duration-500 ease-out ${
+          isSidebarOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+        onClick={() => setIsSidebarOpen(false)}
+      />
+
+      {/* ── Боковое меню с историей (ТЕПЕРЬ ПЛАВНОЕ) ── */}
+      {/* Заменили duration-300 на duration-500 ease-out для эффекта мягкого торможения */}
+      <div
+        className={`absolute lg:relative inset-y-0 left-0 z-40 lg:z-auto w-[85%] sm:w-72 lg:w-1/4 xl:w-1/5 flex flex-col liquid-glass bg-white/95 dark:bg-[#1a1a1a]/95 lg:bg-transparent dark:lg:bg-transparent backdrop-blur-xl border-r lg:border lg:rounded-3xl border-gray-200 dark:border-white/10 shadow-2xl transform transition-transform duration-500 ease-out ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
       >
         <div className="p-4 border-b border-gray-200 dark:border-white/10 flex justify-between items-center">
           <button
@@ -317,7 +317,7 @@ export function AIChatPage() {
         <div className="p-3 sm:p-6 border-b border-gray-200 dark:border-white/10 flex items-center gap-3 bg-white/50 dark:bg-black/20 backdrop-blur-md">
           <button
             onClick={() => setIsSidebarOpen(true)}
-            className="p-2 rounded-xl bg-black/5 dark:bg-white/5 text-gray-500 hover:text-foreground lg:hidden"
+            className="p-2 rounded-xl bg-black/5 dark:bg-white/5 text-gray-500 hover:text-foreground lg:hidden transition-colors"
           >
             <Menu size={20} />
           </button>
