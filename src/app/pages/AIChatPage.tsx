@@ -243,21 +243,20 @@ export function AIChatPage() {
   return (
     <div className="p-0 lg:p-6 2xl:p-10 h-[calc(100vh-116px)] lg:h-[calc(100vh-40px)] flex gap-0 lg:gap-6 max-w-7xl mx-auto relative overflow-hidden">
       {/* ── Затемнение фона на мобилках ── */}
-      {/* ИСПРАВЛЕНИЕ 1: fixed z-[55] чтобы перекрыть всё, кроме самого меню */}
+      {/* Используем absolute и z-30, чтобы затемнять только зону чата */}
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 z-[55] lg:hidden backdrop-blur-sm"
+          className="absolute inset-0 bg-black/60 z-30 lg:hidden backdrop-blur-sm"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
       {/* ── Боковое меню с историей ── */}
-      {/* ИСПРАВЛЕНИЕ 2: fixed z-[60] и bg-background на мобилках, чтобы перекрыть глобальную шапку */}
+      {/* Возвращаем absolute, убираем bg-background, возвращаем обычный отступ p-4 */}
       <div
-        className={`fixed lg:relative inset-y-0 left-0 z-[60] lg:z-auto w-[85%] sm:w-72 lg:w-1/4 xl:w-1/5 flex flex-col liquid-glass bg-background lg:bg-transparent border-r lg:border lg:rounded-3xl border-gray-200 dark:border-white/10 shadow-2xl transform transition-transform duration-300 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
+        className={`absolute lg:relative inset-y-0 left-0 z-40 lg:z-auto w-[85%] sm:w-72 lg:w-1/4 xl:w-1/5 flex flex-col liquid-glass bg-[#0b000b]/95 dark:bg-background/95 lg:bg-transparent backdrop-blur-xl border-r lg:border lg:rounded-3xl border-gray-200 dark:border-white/10 shadow-2xl transform transition-transform duration-300 ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`}
       >
-        {/* ИСПРАВЛЕНИЕ 3: Добавили pt-10 для мобилок, чтобы отодвинуть кнопку от статус-бара iOS/Android */}
-        <div className="p-4 pt-10 lg:pt-4 border-b border-gray-200 dark:border-white/10 flex justify-between items-center">
+        <div className="p-4 border-b border-gray-200 dark:border-white/10 flex justify-between items-center">
           <button
             onClick={handleNewChat}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-2xl bg-purple-600 hover:bg-purple-500 text-white transition-all text-sm font-bold shadow-lg shadow-purple-500/20"
