@@ -54,7 +54,7 @@ const SwipeableTransaction = ({
   tx,
   onDelete,
   formatCurrency,
-  translateCat, // <-- Добавили пропс для перевода категории
+  translateCat,
 }: {
   tx: any;
   onDelete: (id: string) => void;
@@ -344,9 +344,8 @@ export function DashboardPage() {
     setAiLoading(false);
   }, [all.length, language]);
 
-  useEffect(() => {
-    if (all.length > 0) fetchAI();
-  }, [fetchAI, all.length]);
+  // ВНИМАНИЕ: Мы УДАЛИЛИ useEffect, который автоматически вызывал fetchAI()
+  // Теперь запрос будет отправляться только по клику на кнопку!
 
   const openModal = (type: "income" | "spending") => {
     setModalType(type);
@@ -799,8 +798,12 @@ export function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 2xl:gap-5">
-        <div className={`${cardCls} p-5 relative overflow-hidden`}>
+        {/* ИЗМЕНЕНИЯ ЗДЕСЬ: Карточка AI Рекомендаций */}
+        <div
+          className={`${cardCls} p-5 relative overflow-hidden flex flex-col`}
+        >
           <div className="absolute top-0 right-0 w-36 h-36 rounded-full bg-primary/8 blur-3xl pointer-events-none" />
+
           <div className="flex items-center justify-between mb-4 relative z-10">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center">
@@ -810,35 +813,39 @@ export function DashboardPage() {
                 className="text-foreground"
                 style={{ fontSize: "0.95rem", fontWeight: 600 }}
               >
-                {t("aiRecommendation")}
+                {t("aiRecommendation") || "AI Рекомендация расходов"}
               </h3>
             </div>
-            {all.length > 0 && (
+
+            {/* Кнопка обновления показывается всегда, если есть данные и есть сгенерированный текст */}
+            {all.length > 0 && aiText && (
               <button
                 onClick={fetchAI}
                 disabled={aiLoading}
                 className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-white/20 dark:hover:bg-muted transition-all"
+                title="Обновить рекомендацию"
               >
                 <RefreshCw
-                  size={13}
+                  size={14}
                   className={aiLoading ? "animate-spin" : ""}
                 />
               </button>
             )}
           </div>
-          <div className="relative z-10">
+
+          <div className="relative z-10 flex-1 flex flex-col justify-center">
             {all.length === 0 ? (
               <p
-                className="text-muted-foreground"
+                className="text-muted-foreground text-center"
                 style={{ fontSize: "0.85rem" }}
               >
                 {t("aiNoData")}
               </p>
             ) : aiLoading ? (
-              <div className="space-y-2">
-                <div className="h-3.5 bg-white/30 dark:bg-muted rounded-lg animate-pulse" />
-                <div className="h-3.5 bg-white/30 dark:bg-muted rounded-lg animate-pulse w-3/4" />
-                <div className="h-3.5 bg-white/30 dark:bg-muted rounded-lg animate-pulse w-1/2" />
+              <div className="space-y-3 mt-2">
+                <div className="h-3 bg-white/30 dark:bg-muted rounded-lg animate-pulse" />
+                <div className="h-3 bg-white/30 dark:bg-muted rounded-lg animate-pulse w-5/6" />
+                <div className="h-3 bg-white/30 dark:bg-muted rounded-lg animate-pulse w-4/6" />
               </div>
             ) : aiText ? (
               <p
@@ -848,13 +855,24 @@ export function DashboardPage() {
                 {aiText}
               </p>
             ) : (
-              <button
-                onClick={fetchAI}
-                className="w-full py-3 rounded-xl border border-primary/25 text-primary hover:bg-primary/10 transition-all"
-                style={{ fontSize: "0.85rem" }}
-              >
-                Анализировать расходы
-              </button>
+              <div className="flex flex-col items-center text-center gap-4 py-2 mt-auto mb-auto">
+                <p
+                  className="text-muted-foreground"
+                  style={{ fontSize: "0.85rem" }}
+                >
+                  Нажмите кнопку ниже, чтобы ИИ проанализировал ваши транзакции
+                  и дал умный финансовый совет.
+                </p>
+                <button
+                  onClick={fetchAI}
+                  className="w-full py-3.5 rounded-xl bg-primary/10 border border-primary/20 text-primary hover:bg-primary/15 transition-all shadow-sm font-semibold"
+                  style={{ fontSize: "0.85rem" }}
+                >
+                  <span className="flex items-center justify-center gap-2">
+                    <Sparkles size={16} /> Сгенерировать совет
+                  </span>
+                </button>
+              </div>
             )}
           </div>
         </div>
